@@ -1,5 +1,13 @@
 # Language Definition
 
+## Language Summary 
+
+- Structural Statically Typed 
+- Atoms for nominal typing.
+- Vector oriented, operations are lifted to vectors.
+- Strict evaluation from left to right.
+- Lazy `||` (or) and `&&` (and) expressions.
+- With pattern matching.
 
 ## Abstract syntax
 
@@ -8,6 +16,7 @@
 ```
 id -> [a-zA-Z_][a-zA-Z_0-9]*
 lvaluable -> id [\[e\]]*
+lvaluable -> id.lvaluable
 args -> e [,args]*
 fun_args -> T id [,fun_args]*
 loop_a -> break;
@@ -20,7 +29,7 @@ patterns -> id [by reference]^1
 patterns -> {id : T [,records]*} [by reference]^1
 records -> id : T [,records]*
 function_return -> bool, char, string, int, float, unit, void
-``
+```
 
 ### Types
 
@@ -49,6 +58,9 @@ e -> e != e
 e -> e == e
 e -> e >= e
 e -> e <= e
+e -> e || e
+e -> e && e
+e -> ~e
 e -> (e)
 e -> \[args*\]
 e -> n where 'n' is any number
