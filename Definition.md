@@ -51,7 +51,7 @@ e -> e / e
 e -> e ^ e
 e -> e % e
 e -> e - e
-e -> -:call v:lua.require("markdown").new_line_below()e
+e -> -e
 e -> e < e
 e -> e > e
 e -> e != e
