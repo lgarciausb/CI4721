@@ -73,7 +73,7 @@ e -> match e with [patterns => {a}]+
 
 ```
 a -> lvaluable = e;
-a -> for(id : id){loop_a*}
+a -> for(patterns : e){loop_a*}
 a -> while(e){loop_a*}
 a -> match e with [patterns => {a}]+
 a -> e;
