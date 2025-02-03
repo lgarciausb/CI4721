@@ -100,8 +100,8 @@ Basic types and their inhabitants constitutes:
 - unit: $unit \in unit$
 - void: inhabited type.
 - vector: $\[1,2,3\] \in vector<int>$
-- atoms: $\#atom \in \#atom$
-- Pointers: $\&x \in pointer<int>$
+- atoms: `#`$atom \in$ `#` $atom$
+- Pointers: `&`$x \in pointer<int>$
 
 Note1: Number constants are "polymorphic". That is $5$ can be an integer
 or a float depending on the context.
