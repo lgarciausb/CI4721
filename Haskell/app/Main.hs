@@ -1,8 +1,9 @@
 module Main where
 
-import Lexer
+import Parser.Lexer
 import qualified Data.Text as T
-import LexerDefinitions
+import Parser.LexerDefinitions
+import Data.Foldable
 main :: IO ()
-main = readFile "./programs/fibo.md" >>= print . flip runAlex alexMonadScan . T.pack
+main = readFile "./programs/string.md" >>=  print . scanMany . T.pack
 

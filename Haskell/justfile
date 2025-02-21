@@ -15,8 +15,7 @@ clean:
   rm -rf ./dist/**
 
 alex:
-  alex ./Alex/Lexer.x 
-  cp ./Alex/Lexer.hs ./src/Lexer.hs
+  alex ./Alex/Lexer.x  -o ./src/Parser/Lexer.hs
 
 parse: build 
   cabal run Haskell-exe

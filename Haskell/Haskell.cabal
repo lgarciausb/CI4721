@@ -26,9 +26,9 @@ source-repository head
 library
   exposed-modules:
       Data.Proof
-      LexDef
-      Lexer
-      LexerDefinitions
+      Parser.Lexer
+      Parser.LexerDefinitions
+      Parser.Runner
   other-modules:
       Paths_Haskell
   autogen-modules:

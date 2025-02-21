@@ -4,7 +4,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-module Lexer where
+module Parser.Lexer where
 
 import Control.Monad.State
 import Control.Monad
@@ -14,52 +14,53 @@ import Codec.Binary.UTF8.String (encode)
 import Data.Text qualified as T
 import Control.Lens
 import Control.Lens.TH
-import LexerDefinitions
+import Parser.LexerDefinitions
 import Data.Functor
 }
 
 %wrapper "monadUserState-strict-text"
 
-$digit = 0-9
+$digit = [0-9]
+$alpha = [a-zA-Z]
 @operators = "+" | "-" | "*" | "/" | "^" | "%" | "<" | ">" | "!=" | "==" | ">=" | "<=" | " ||" | "&&" | "~" | "&"
-@l_id = (a-z | A-Z | "_")(a-z | A-Z | "_" | 0-9)*
+@id = ( $alpha | \_) ($alpha | \_ | digit)*
 
 tokens :-
   <0>  $white+ ;
-  <0> "'" ("\\'" | ~') "'"   {token $ \(_,_,_,s) _ -> LChar s       }
-  <0> $digit+ ("." $digit+ | [e E] ("+" | "-")? $digit+)? {token $ \(_,_,_,s) _ -> LNumber s }
-  <0> "#" l_id       {token $ \(_,_,_,s) _ -> LAtom $ T.tail $ s                       }
-  <0> "["            {token $ \ _ _ -> LOBckt                                           }
-  <0> "]"            {token $ \ _ _ -> LCBckt                                           }
-  <0> "{"            {token $ \ _ _ -> LOBrc                                            }
-  <0> "}"            {token $ \ _ _ -> LCBrc                                            }
-  <0> "("            {token $ \ _ _ -> LOParen                                          }
-  <0> ")"            {token $ \ _ _ -> LCParen                                          }
-  <0> ","            {token $ \ _ _ -> LComma                                           }
-  <0> ":"            {token $ \ _ _ -> LColon                                           }
-  <0> "=>"           {token $ \ _ _ -> LFatArrow                                        }
-  <0> ":="           {token $ \ _ _ -> LAssign                                          }
-  <0> "match"        {token $ \ _ _ -> LMatch                                           }
-  <0> "with"         {token $ \ _ _ -> LWith                                            }
-  <0> "type"         {token $ \ _ _ -> LType                                            }
-  <0> ";"            {token $ \ _ _ -> LSemiColon                                       }
-  <0> "for"          {token $ \ _ _ -> LFor                                             }
-  <0> "while"        {token $ \ _ _ -> LWhile                                           }
-  <0> "continue"     {token $ \ _ _ -> LContinue                                        }
-  <0> "break"        {token $ \ _ _ -> LBreak                                           }
-  <0> "new"          {token $ \ _ _ -> LNew                                             }
-  <0> "by"           {token $ \ _ _ -> LBy                                              }
-  <0> "reference"    {token $ \ _ _ -> LReference                                       }
-  <0> @operators     {token $ \(_,_,_,s) _ -> LOp s                                    }
-  <0> "|"            {token $ \_ _ -> LVBar                                            }
-  <0> @l_id          {token $ \(_,_,_,s) _ -> LIdentifier s                            } 
-  <0,commentS> "/*"  { beginComment                                            }
-  <commentS> "*/"    { endComment                                              }
-  <commentS> [.\n]   { appendComment                                           }
-  <0> "\""           { begin stringS                                             }
-  <stringS> "\""     { endString                                               }
-  <stringS> \\[nt\"] { escapeString                                            }
-  <stringS> .        { appendString                                            }
+  <0> "'" ("\\'" | ~') "'"   {token $ \(_,_,_,s) l -> LChar . T.take l $ s                     }
+  <0> $digit+ ("." $digit+ | [e E] ("+" | "-")? $digit+)? {token $ \(_,_,_,s) l -> LNumber . T.take l $ s }
+  <0> "#" id         {token $ \(_,_,_,s) l -> LAtom $ T.tail $ T.take l s                    }
+  <0> "["            {token $ \ _ _ -> LOBckt                                                }
+  <0> "]"            {token $ \ _ _ -> LCBckt                                                }
+  <0> "{"            {token $ \ _ _ -> LOBrc                                                 }
+  <0> "}"            {token $ \ _ _ -> LCBrc                                                 }
+  <0> "("            {token $ \ _ _ -> LOParen                                               }
+  <0> ")"            {token $ \ _ _ -> LCParen                                               }
+  <0> ","            {token $ \ _ _ -> LComma                                                }
+  <0> ":"            {token $ \ _ _ -> LColon                                                }
+  <0> "=>"           {token $ \ _ _ -> LFatArrow                                             }
+  <0> ":="           {token $ \ _ _ -> LAssign                                               }
+  <0> "match"        {token $ \ _ _ -> LMatch                                                }
+  <0> "with"         {token $ \ _ _ -> LWith                                                 }
+  <0> "type"         {token $ \ _ _ -> LType                                                 }
+  <0> ";"            {token $ \ _ _ -> LSemiColon                                            }
+  <0> "for"          {token $ \ _ _ -> LFor                                                  }
+  <0> "while"        {token $ \ _ _ -> LWhile                                                }
+  <0> "continue"     {token $ \ _ _ -> LContinue                                             }
+  <0> "break"        {token $ \ _ _ -> LBreak                                                }
+  <0> "new"          {token $ \ _ _ -> LNew                                                  }
+  <0> "by"           {token $ \ _ _ -> LBy                                                   }
+  <0> "reference"    {token $ \ _ _ -> LReference                                            }
+  <0> @operators     {token $ \(_,_,_,s) l -> LOp . T.take l $ s                               }
+  <0> "|"            {token $ \_ _ -> LVBar                                                  }
+  <0> @id            {token $ \(_,_,_,s) l -> LIdentifier $ T.take l s                       } 
+  <0,commentS> "/*"  { beginComment                                                          }
+  <commentS> "*/"    { endComment                                                            }
+  <commentS> [.\n]   { appendComment                                                         }
+  <0> \"           { begin stringS                                                         }
+  <stringS> \"     { endString                                                             }
+  <stringS> \\[nt\"] { escapeString                                                          }
+  <stringS> .        { appendString                                                          }
 
 
 {
@@ -92,11 +93,11 @@ escapeString i@(_,_,_,(_ T.:< c T.:< _)) _ = alexModifyUserState (\s
          't' -> '\t'
          '"' -> '"'
 
-
 endString :: AlexAction Token
 endString _ _ = do 
  buf <- _austTextBuff <$> alexGetUserState
  alexModifyUserState (\s -> s{_austTextBuff = mempty})
+ modify $ \s -> s{alex_scd=0}
  pure $ LString (T.reverse buf)
 
 beginComment :: AlexAction Token 
@@ -118,5 +119,14 @@ appendComment  i@(_,_,_,(_ T.:< c T.:< _)) _ = alexModifyUserState (\s
   -> s{_austCommentBuff  =  c T.:< s._austCommentBuff}
  ) *> skip i 1
 
+
+scanMany :: Text -> Either String [Token]
+scanMany input = runAlex input go
+  where
+    go = do
+      output <- alexMonadScan
+      if output == LEOF
+        then pure [output]
+        else (output :) <$> go
 
 }
