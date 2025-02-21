@@ -37,17 +37,16 @@ library
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      array
+      MissingH
+    , array
     , base >=4.7 && <5
     , bytestring
     , containers
     , ghc-experimental
     , lens
     , mtl
-    , parsec
     , pretty
     , random
-    , record-hasfield
     , singletons
     , singletons-base
     , singletons-th
@@ -68,6 +67,7 @@ executable Haskell-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       Haskell
+    , MissingH
     , array
     , base >=4.7 && <5
     , bytestring
@@ -75,10 +75,8 @@ executable Haskell-exe
     , ghc-experimental
     , lens
     , mtl
-    , parsec
     , pretty
     , random
-    , record-hasfield
     , singletons
     , singletons-base
     , singletons-th
@@ -103,6 +101,7 @@ test-suite Haskell-test
   build-depends:
       HTF
     , Haskell
+    , MissingH
     , array
     , base >=4.7 && <5
     , bytestring
@@ -110,10 +109,8 @@ test-suite Haskell-test
     , ghc-experimental
     , lens
     , mtl
-    , parsec
     , pretty
     , random
-    , record-hasfield
     , singletons
     , singletons-base
     , singletons-th

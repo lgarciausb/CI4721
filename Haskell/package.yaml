@@ -24,7 +24,6 @@ dependencies:
   - containers
   - mtl
   - transformers
-  - parsec
   - pretty
   - text >= 2.1.2
   - singletons
@@ -37,7 +36,6 @@ dependencies:
   - utf8-string
   - array
   - template-haskell 
-  - record-hasfield
   - MissingH 
 
 
@@ -67,12 +65,7 @@ executables:
       - -with-rtsopts=-N
  
     dependencies:
-    - Haskell
-  
-    
-
-    dependencies:
-    - Haskell
+      - Haskell
 
 tests:
   Haskell-test:
