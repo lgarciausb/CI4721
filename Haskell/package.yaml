@@ -26,13 +26,19 @@ dependencies:
   - transformers
   - parsec
   - pretty
-  - text >= 1.2
+  - text >= 2.1.2
   - singletons
   - singletons-base
   - singletons-th 
   - ghc-experimental
   - random
-
+  - bytestring
+  - lens
+  - utf8-string
+  - array
+  - template-haskell 
+  - record-hasfield
+  - MissingH 
 
 
 ghc-options:

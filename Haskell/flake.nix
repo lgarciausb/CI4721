@@ -19,10 +19,12 @@
             [ 
               pkgs.hpack
               pkgs.just
-              pkgs.haskellPackages.Cabal_3_14_0_0
+              pkgs.haskellPackages.cabal-install
               pkgs.haskell.compiler.ghc910
               (pkgs.haskell-language-server.override { supportedGhcVersions = [ "910" ]; })
               pkgs.haskellPackages.hoogle
+              pkgs.haskellPackages.alex 
+              pkgs.haskellPackages.happy
             ];
         };
       };

@@ -1,12 +1,12 @@
 default: build
 
 [group('build')]
-build:
+build: alex 
   hpack
   cabal build Haskell-exe 
 
 [positional-arguments]
-ghci *args='':
+ghci *args='': alex
   hpack
   cabal repl {{args}}
 
@@ -14,3 +14,9 @@ clean:
   cabal clean
   rm -rf ./dist/**
 
+alex:
+  alex ./Alex/Lexer.x 
+  cp ./Alex/Lexer.hs ./src/Lexer.hs
+
+parse: build 
+  cabal run Haskell-exe

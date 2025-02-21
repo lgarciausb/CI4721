@@ -11,11 +11,8 @@ module Data.Proof where
 
 import Data.Function.Singletons
 import Data.Kind (Type, Constraint)
-import Utilities.ShowM
 
 data Void2 a
-
-instance Functor m => ShowM m (Void2 a)
 
 
 class (forall (a :: k). psi  a) => C0 (psi :: k -> Constraint)  
