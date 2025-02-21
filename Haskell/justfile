@@ -1,0 +1,16 @@
+default: build
+
+[group('build')]
+build:
+  hpack
+  cabal build Haskell-exe 
+
+[positional-arguments]
+ghci *args='':
+  hpack
+  cabal repl {{args}}
+
+clean:
+  cabal clean
+  rm -rf ./dist/**
+
