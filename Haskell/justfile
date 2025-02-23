@@ -18,7 +18,7 @@ alex:
   alex ./Alex/Lexer.x  -o ./src/Parser/Lexer.hs
 
 happy: alex 
-  happy ./Alex/Parser.y -o ./src/Parser/Parser.hs
+  happy -i ./Alex/Parser.y -o ./src/Parser/Parser.hs
 
 parse: build 
   cabal run Haskell-exe

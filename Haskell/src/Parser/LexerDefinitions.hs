@@ -11,6 +11,7 @@ import Data.Text qualified as T
 import Control.Lens
 import Control.Monad.Except
 
+
 data Token' a 
   = LChar Text a  
   | LString Text a 
@@ -44,6 +45,12 @@ data Token' a
   | LDot a
   | LEOF 
   deriving (Eq, Show)
+
+data PTypes a 
+  = PAtom Text a
+  | PId Text a
+  | PUnion (PTypes a) (PTypes a) 
+  | PRecord (Text, PTypes a, a) [(Text,PTypes a, a)] a
 
 
 data AAST a where 
@@ -97,6 +104,8 @@ alexInitUserState = AUST
   , _austTextBuff     = mempty 
   , _austCommentBuff  = mempty
   }
+
+
 
 type P a = StateT AlexUserState (ExceptT Text Maybe) a
 

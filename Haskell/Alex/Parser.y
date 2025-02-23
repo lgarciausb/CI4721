@@ -1,5 +1,6 @@
 {
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings   #-}
 module Parser.Parser where 
 
@@ -7,10 +8,11 @@ import Parser.Lexer
 import Parser.LexerDefinitions
 import Data.Text (Text)
 import Data.Text qualified as T
+import Control.Lens ((&))
 }
 
 
-%name parse
+%name parse function_defs
 %tokentype { Token }
 %error { parseError }
 %monad { Alex } { >>= } { pure }
@@ -64,7 +66,6 @@ import Data.Text qualified as T
   '||'       {LOp "||" _}
   '&&'       {LOp "&&" _}
   '~'        {LOp "~"  _}
-  NEG        {LOp "-" _}
   '&'        {LOp "&" _}
 
 %right '||' 
@@ -82,68 +83,60 @@ ixs : '[' e ']' {undefined}
 
 lvaluable : identifier ixs {undefined}
           | identifier '.' lvaluable {undefined}
+          | identifier {undefined}
 
 args : e {undefined}
      | e ',' args {undefined}
 
-records : identifier ':' T mRecords {undefined}
+records :: {PTypes AlexPosn}
+records : identifier ':' T mRecords {(\(LIdentifier t p) ty rs -> PRecord (t,ty,p) rs p) $1 $3 $4}
 
-mRecords : {- empty -} {undefined}
-         | ',' records {undefined} 
+mRecords :: {[(Text,PTypes AlexPosn,AlexPosn)]}
+mRecords : {- empty -} {[]}
+         | ',' records { (\(PRecord r rs _) -> r:rs) $2  } 
 
-T0 : atom {undefined}
-  | identifier {undefined}
-  | '{' records '}' {undefined}
+T0 : atom {$1 & \(LAtom t p) -> PAtom t p}
+  | identifier { $1 & \(LIdentifier t p) -> PId t p}
+  | '{' records '}' {$2}
   
-T : T0 {undefined}
-  | T '|' T0 {undefined}
+T : T0 {$1}
+  | T '|' T0 {PUnion $1 $3 }
 
-moreArgs : ',' fun_args {undefined}
-         | {- empty -} {undefined}
+loop_a0 : break  {undefined}
+       | continue {undefined}
+       | a0 {undefined}
 
-fun_args : T identifier moreArgs {undefined}
+loop_a : loop_a ';' loop_a0 {undefined}
+       | loop_a0 {undefined} 
 
-loop_a : break ';'  {undefined}
-       | continue ';'  {undefined}
-       | actions loop_as {undefined}
-
-loop_as : {- empty -} {undefined}
-        | loop_a {undefined}
-
-optionalByRef : by reference {undefined}
-              | {- empty -} {undefined}
+loop_as : loop_a ';'  {undefined}
 
 pattern : number {undefined} 
          | char {undefined}
          | string {undefined}
-         | char {undefined}
          | identifier optionalByRef {undefined}
          | '{' records '}' {undefined}
 
-function_return : identifier {undefined}
-
 patterns : pattern '=>' '{' actions '}' {undefined}
-         | pattern '=>' '{' actions '}' patterns {undefined}
+         | patterns pattern '=>' '{' actions '}' {undefined}
 
-a0 : lvaluable ':=' e {undefined}
+a0 : e {undefined}
    | for '(' patterns ':' e ')' '{' loop_as '}' {undefined}
    | while '(' e ')' '{' loop_as '}' {undefined}
-   | e {undefined}
-   | identifier e {undefined}
+   | lvaluable ':=' e {undefined}
+
 
 as : as ';' a0 {undefined}
-   | a0        {undefined}
+   | a0 {undefined}
 
 actions : as ';' {undefined}
         | {-empty-} {undefined}
 
-function_def : function_return identifier '(' fun_args ')' '{' actions '}' {undefined}
-
-function_defs : function_defs function_def {undefined}
-              | function_def {undefined}
+optionalByRef : by reference {undefined}
+              | {- empty -} {undefined}
 
 
-e : identifier {undefined}
+e : lvaluable {undefined}
   | new T '(' args ')' {undefined}
   | '&' lvaluable {undefined}
   | '-' e %prec NEG {undefined}
@@ -168,6 +161,19 @@ e : identifier {undefined}
   | string {undefined}
   | char {undefined}
   | match e with patterns {undefined}
+  | identifier '(' args ')' {undefined}
+
+
+moreArgs : ',' fun_args {undefined}
+         | {- empty -} {undefined}
+
+fun_args : T identifier optionalByRef  moreArgs {undefined}
+
+
+function_def : T '(' fun_args ')' '{' actions '}' {undefined}
+
+function_defs : function_defs function_def {undefined}
+              | function_def {undefined}
 
 {
 parseError :: Token -> Alex a
