@@ -28,6 +28,7 @@ library
       Data.Proof
       Parser.Lexer
       Parser.LexerDefinitions
+      Parser.Parser
       Parser.Runner
   other-modules:
       Paths_Haskell

@@ -27,33 +27,34 @@ $alpha = [a-zA-Z]
 
 tokens :-
   <0>  $white+ ;
-  <0> "'" ("\\'" | ~') "'"   {token $ \(_,_,_,s) l -> LChar . T.take l $ s                     }
-  <0> $digit+ ("." $digit+ | [e E] ("+" | "-")? $digit+)? {token $ \(_,_,_,s) l -> LNumber . T.take l $ s }
-  <0> "#" id         {token $ \(_,_,_,s) l -> LAtom $ T.tail $ T.take l s                    }
-  <0> "["            {token $ \ _ _ -> LOBckt                                                }
-  <0> "]"            {token $ \ _ _ -> LCBckt                                                }
-  <0> "{"            {token $ \ _ _ -> LOBrc                                                 }
-  <0> "}"            {token $ \ _ _ -> LCBrc                                                 }
-  <0> "("            {token $ \ _ _ -> LOParen                                               }
-  <0> ")"            {token $ \ _ _ -> LCParen                                               }
-  <0> ","            {token $ \ _ _ -> LComma                                                }
-  <0> ":"            {token $ \ _ _ -> LColon                                                }
-  <0> "=>"           {token $ \ _ _ -> LFatArrow                                             }
-  <0> ":="           {token $ \ _ _ -> LAssign                                               }
-  <0> "match"        {token $ \ _ _ -> LMatch                                                }
-  <0> "with"         {token $ \ _ _ -> LWith                                                 }
-  <0> "type"         {token $ \ _ _ -> LType                                                 }
-  <0> ";"            {token $ \ _ _ -> LSemiColon                                            }
-  <0> "for"          {token $ \ _ _ -> LFor                                                  }
-  <0> "while"        {token $ \ _ _ -> LWhile                                                }
-  <0> "continue"     {token $ \ _ _ -> LContinue                                             }
-  <0> "break"        {token $ \ _ _ -> LBreak                                                }
-  <0> "new"          {token $ \ _ _ -> LNew                                                  }
-  <0> "by"           {token $ \ _ _ -> LBy                                                   }
-  <0> "reference"    {token $ \ _ _ -> LReference                                            }
-  <0> @operators     {token $ \(_,_,_,s) l -> LOp . T.take l $ s                               }
-  <0> "|"            {token $ \_ _ -> LVBar                                                  }
-  <0> @id            {token $ \(_,_,_,s) l -> LIdentifier $ T.take l s                       } 
+  <0> "'" ("\\'" | ~') "'"   {token $ \(pos,_,_,s) l -> LChar (T.take l s) pos                     }
+  <0> $digit+ ("." $digit+ | [e E] ("+" | "-")? $digit+)? {token $ \(pos,_,_,s) l -> LNumber (T.take l s) pos }
+  <0> "#" id         {token $ \(pos,_,_,s) l -> LAtom (T.tail $ T.take l s) pos                    }
+  <0> "["            {token $ \ (pos,_,_,_) _ -> LOBckt pos                                               }
+  <0> "]"            {token $ \ (pos,_,_,_) _ -> LCBckt pos                                              }
+  <0> "{"            {token $ \ (pos,_,_,_) _ -> LOBrc  pos                                               }
+  <0> "}"            {token $ \ (pos,_,_,_) _ -> LCBrc  pos                                               }
+  <0> "("            {token $ \ (pos,_,_,_) _ -> LOParen pos                                              }
+  <0> ")"            {token $ \ (pos,_,_,_) _ -> LCParen pos                                              }
+  <0> ","            {token $ \ (pos,_,_,_) _ -> LComma  pos                                              }
+  <0> ":"            {token $ \ (pos,_,_,_) _ -> LColon  pos                                              }
+  <0> "=>"           {token $ \ (pos,_,_,_) _ -> LFatArrow pos                                            }
+  <0> ":="           {token $ \ (pos,_,_,_) _ -> LAssign   pos                                            }
+  <0> "match"        {token $ \ (pos,_,_,_) _ -> LMatch    pos                                            }
+  <0> "with"         {token $ \ (pos,_,_,_) _ -> LWith     pos                                            }
+  <0> "type"         {token $ \ (pos,_,_,_) _ -> LType     pos                                            }
+  <0> ";"            {token $ \ (pos,_,_,_) _ -> LSemiColon  pos                                          }
+  <0> "for"          {token $ \ (pos,_,_,_) _ -> LFor        pos                                          }
+  <0> "while"        {token $ \ (pos,_,_,_) _ -> LWhile      pos                                          }
+  <0> "continue"     {token $ \ (pos,_,_,_) _ -> LContinue   pos                                          }
+  <0> "break"        {token $ \ (pos,_,_,_) _ -> LBreak      pos                                          }
+  <0> "new"          {token $ \ (pos,_,_,_) _ -> LNew        pos                                          }
+  <0> "by"           {token $ \ (pos,_,_,_) _ -> LBy         pos                                          }
+  <0> "reference"    {token $ \ (pos,_,_,_) _ -> LReference  pos                                          }
+  <0> @operators     {token $ \(pos,_,_,s) l -> LOp (T.take l s) pos                               }
+  <0> "|"            {token $ \(pos,_,_,_) _ -> LVBar pos                                                   }
+  <0> "."            {token $ \(pos,_,_,_) _ -> LDot pos                                                   }
+  <0> @id            {token $ \(pos,_,_,s) l -> LIdentifier (T.take l s) pos                       } 
   <0,commentS> "/*"  { beginComment                                                          }
   <commentS> "*/"    { endComment                                                            }
   <commentS> [.\n]   { appendComment                                                         }
@@ -65,13 +66,11 @@ tokens :-
 
 {
 
+type Token = Token' AlexPosn
+
 instance MonadState AlexState Alex where 
   state f = Alex $ \s -> Right $ (\(a,b) -> (b,a)) $ f s
 
-ifThenElse :: Bool -> a -> a -> a
-ifThenElse t a b = case t of 
-  True -> a
-  False -> b
 
 alexEOF :: Alex Token 
 alexEOF = pure LEOF
@@ -94,11 +93,11 @@ escapeString i@(_,_,_,(_ T.:< c T.:< _)) _ = alexModifyUserState (\s
          '"' -> '"'
 
 endString :: AlexAction Token
-endString _ _ = do 
+endString (pos,_,_,_) _ = do 
  buf <- _austTextBuff <$> alexGetUserState
  alexModifyUserState (\s -> s{_austTextBuff = mempty})
  modify $ \s -> s{alex_scd=0}
- pure $ LString (T.reverse buf)
+ pure $ LString (T.reverse buf) pos
 
 beginComment :: AlexAction Token 
 beginComment i _ = alexModifyUserState (\s 
@@ -106,12 +105,12 @@ beginComment i _ = alexModifyUserState (\s
   ) *> skip i 1
 
 endComment :: AlexAction Token 
-endComment i _ = do
+endComment i@(pos,_,_,_) _ = do
   alexModifyUserState (\s -> s{_austCommentDepth = s._austCommentDepth - 1})
   modify (\s -> s{alex_scd = if s.alex_scd == 1 then 0 else commentS})
   s <- alexGetUserState
   case _austCommentDepth s of 
-    0 -> pure $ LString $ T.reverse $ _austCommentBuff s
+    0 -> pure $ LString (T.reverse $ _austCommentBuff s) pos
     _ -> skip i 1
 
 appendComment :: AlexAction Token

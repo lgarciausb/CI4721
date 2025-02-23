@@ -1,6 +1,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE GADTs               #-}
 module Parser.LexerDefinitions where 
 
 import Control.Lens.TH 
@@ -10,38 +11,45 @@ import Data.Text qualified as T
 import Control.Lens
 import Control.Monad.Except
 
-data Token 
-  = LChar Text  
-  | LString Text 
-  | LNumber Text 
-  | LAtom Text 
-  | LOBckt 
-  | LCBckt 
-  | LOBrc 
-  | LCBrc 
-  | LOParen 
-  | LCParen 
-  | LComma 
-  | LColon 
-  | LFatArrow 
-  | LAssign 
-  | LMatch 
-  | LWith 
-  | LType 
-  | LSemiColon 
-  | LFor 
-  | LWhile 
-  | LContinue 
-  | LBreak 
-  | LNew 
-  | LBy 
-  | LReference 
-  | LOp Text  
-  | LVBar 
-  | LIdentifier Text 
-  | LComment Text
+data Token' a 
+  = LChar Text a  
+  | LString Text a 
+  | LNumber Text a
+  | LAtom Text a
+  | LOBckt a
+  | LCBckt a
+  | LOBrc a
+  | LCBrc a
+  | LOParen a 
+  | LCParen a
+  | LComma a
+  | LColon a
+  | LFatArrow a 
+  | LAssign a
+  | LMatch a
+  | LWith a
+  | LType a
+  | LSemiColon a
+  | LFor a
+  | LWhile a 
+  | LContinue a
+  | LBreak a
+  | LNew a
+  | LBy a
+  | LReference a
+  | LOp Text  a
+  | LVBar a
+  | LIdentifier Text a
+  | LComment Text a
+  | LDot a
   | LEOF 
   deriving (Eq, Show)
+
+
+data AAST a where 
+  
+
+data EAST where 
 
 -- instance Show Token where 
 --   show (LChar t)       = "'" <> T.unpack t <> "'"
