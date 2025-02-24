@@ -11,6 +11,9 @@ import Data.Text qualified as T
 import Control.Lens
 import Control.Monad.Except
 
+infixr 1 |>
+(|>) :: a -> (a -> b) -> b
+(|>) = flip ($)
 
 data Token' a 
   = LChar Text a  
@@ -46,17 +49,55 @@ data Token' a
   | LEOF 
   deriving (Eq, Show)
 
+data RecordPattern a 
+  = RecordPattern  (Text, PTypes a, a) [(Text,PTypes a, a)] a
+
+
 data PTypes a 
   = PAtom Text a
   | PId Text a
   | PUnion (PTypes a) (PTypes a) 
-  | PRecord (Text, PTypes a, a) [(Text,PTypes a, a)] a
+  | PRecord (RecordPattern a) 
+
+getPTypesInfo :: PTypes a -> a
+getPTypesInfo (PAtom _ a) = a
+getPTypesInfo (PId _ a) = a
+getPTypesInfo (PUnion a _) = getPTypesInfo a
+getPTypesInfo (PRecord (RecordPattern _ _ a)) = a
+
+data ByRef a = ByRef a
+
+data FunArg a = FunArg (PTypes a) Text (Maybe (ByRef a)) a
+
+type FunArgs a = [FunArg a]
+
+data FunctionDef a = FunctionDef (PTypes a) [FunArg a] [Action a] a
+
+data LValuable a 
+  = PLId Text a 
+  | PLIndexed Text [Expression a] a
+  | PLDot Text (LValuable a) a
+
+data LoopAction a 
+  = Break a
+  | Continue a 
+  | LAction (Action a)
+
+data Pattern a
+  = PaNumber Text a
+  | PaString Text a
+  | PaChar Text a
+  | PaId Text (Maybe (ByRef a)) a
+  | PaPattern (RecordPattern a) 
+
+data Action a
+  = For (Pattern a) (Expression a) [LoopAction a] a
+  | While (Expression a) [LoopAction a] a
+  | Assign (LValuable a) (Expression a)
+  | AExpression (Expression a)
 
 
-data AAST a where 
-  
-
-data EAST where 
+data Expression a  
 
 -- instance Show Token where 
 --   show (LChar t)       = "'" <> T.unpack t <> "'"
