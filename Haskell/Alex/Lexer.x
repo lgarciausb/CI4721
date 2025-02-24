@@ -102,16 +102,18 @@ endString (pos,_,_,_) _ = do
 beginComment :: AlexAction Token 
 beginComment i _ = alexModifyUserState (\s 
    -> s{_austCommentDepth = s._austCommentDepth + 1}
-  ) *> skip i 1
+  ) *> modify (\s -> s{alex_scd=commentS})
+    *> skip i 1
 
 endComment :: AlexAction Token 
-endComment i@(pos,_,_,_) _ = do
+endComment i@(pos,_,_,_) l = do
   alexModifyUserState (\s -> s{_austCommentDepth = s._austCommentDepth - 1})
-  modify (\s -> s{alex_scd = if s.alex_scd == 1 then 0 else commentS})
   s <- alexGetUserState
   case _austCommentDepth s of 
-    0 -> pure $ LString (T.reverse $ _austCommentBuff s) pos
-    _ -> skip i 1
+    0 -> do 
+      modify (\s -> s{alex_scd = 0})
+      pure $ LString (T.reverse $ _austCommentBuff s) pos
+    _ -> appendComment i l
 
 appendComment :: AlexAction Token
 appendComment  i@(_,_,_,(_ T.:< c T.:< _)) _ = alexModifyUserState (\s 
