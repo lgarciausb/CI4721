@@ -11,13 +11,11 @@ module Parser.ScopeCheck where
 
 import Parser.LexerDefinitions 
 import Parser.Lexer
-import Parser.Parser
 import Control.Monad.Reader 
 import Control.Monad.Writer
 import TypedMap 
 import Data.Text (Text)
 import Data.Text qualified as T
-import Data.Kind 
 import Control.Monad 
 import Data.Foldable
 
