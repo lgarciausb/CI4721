@@ -39,11 +39,12 @@ data Token' a
   | LFor a
   | LWhile a 
   | LContinue a
+  | LReturn a
   | LBreak a
   | LNew a
   | LBy a
   | LReference a
-  | LOp Text  a
+  | LOp Text a
   | LVBar a
   | LIdentifier Text a
   | LComment Text a
@@ -108,6 +109,8 @@ data Action a
   = For (Pattern a) (Expression a) [LoopAction a] a
   | While (Expression a) [LoopAction a] a
   | Assign (LValuable a) (Expression a)
+  | Declare (PTypes a) Text (Maybe (Expression a))
+  | TypeDef Text (PTypes a) a
   | AExpression (Expression a)
   | Return (Expression a) a
   deriving (Eq,Show)
@@ -203,6 +206,7 @@ getExpressionInfo (FApp _ _ a) = a
 --   show LFor            = "for"
 --   show LWhile          = "while"
 --   show LContinue       = "continue"
+--   show LReturn         = "return"
 --   show LBreak          = "bre{-# LANGUAGE PatternSynonyms #-}ak"
 --   show LNew            = "new"
 --   show LBy             = "by"

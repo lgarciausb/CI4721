@@ -2,7 +2,6 @@ module Main where
 
 import Parser.Lexer
 import qualified Data.Text as T
-import Parser.LexerDefinitions
 import Data.Foldable
 import Parser.Parser 
 

@@ -29,7 +29,7 @@ tokens :-
   <0>  $white+ ;
   <0> "'" ("\\'" | ~') "'"   {token $ \(pos,_,_,s) l -> LChar (T.take l s) pos                     }
   <0> $digit+ ("." $digit+ | [e E] ("+" | "-")? $digit+)? {token $ \(pos,_,_,s) l -> LNumber (T.take l s) pos }
-  <0> "#" id         {token $ \(pos,_,_,s) l -> LAtom (T.tail $ T.take l s) pos                    }
+  <0> "#" @id         {token $ \(pos,_,_,s) l -> LAtom (T.tail $ T.take l s) pos                    }
   <0> "["            {token $ \ (pos,_,_,_) _ -> LOBckt pos                                               }
   <0> "]"            {token $ \ (pos,_,_,_) _ -> LCBckt pos                                              }
   <0> "{"            {token $ \ (pos,_,_,_) _ -> LOBrc  pos                                               }
@@ -47,6 +47,7 @@ tokens :-
   <0> "for"          {token $ \ (pos,_,_,_) _ -> LFor        pos                                          }
   <0> "while"        {token $ \ (pos,_,_,_) _ -> LWhile      pos                                          }
   <0> "continue"     {token $ \ (pos,_,_,_) _ -> LContinue   pos                                          }
+  <0> "return"       {token $ \ (pos,_,_,_) _ -> LReturn     pos                                          }
   <0> "break"        {token $ \ (pos,_,_,_) _ -> LBreak      pos                                          }
   <0> "new"          {token $ \ (pos,_,_,_) _ -> LNew        pos                                          }
   <0> "by"           {token $ \ (pos,_,_,_) _ -> LBy         pos                                          }

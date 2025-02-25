@@ -67,9 +67,9 @@ import Control.Lens ((&))
   '&&'       {LOp "&&" _}
   '~'        {LOp "~"  _}
   '&'        {LOp "&" _}
-  'return'   {LIdentifier "return" _}
+  return    {LReturn _}
 
-%nonassoc 'return'
+%nonassoc return
 %right '||' 
 %right '&&'
 %left '<' '>' '==' '!=' '>=' '<=' 
@@ -142,7 +142,10 @@ a0 : e {AExpression $1}
                                         \(LWhile p) e as -> While e as p
                                       }
    | lvaluable ':=' e {Assign $1 $3}
-   | 'return' e {$1 |> \(LIdentifier _ p) -> Return $2 p} 
+   | type identifier ':=' T { $4 |> $2 |> $1 |> \(LType p) (LIdentifier t _) ty -> TypeDef t ty p}
+   | T identifier ':=' e { $4 |> $2 |> $1 |> \ty (LIdentifier t _) e -> Declare ty t (Just e)}
+   | T identifier { $2 |> $1 |> \ty (LIdentifier t _) -> Declare ty t Nothing}
+   | return e {$1 |> \(LReturn p) -> Return $2 p} 
 
 as :: {[Action AlexPosn]}
 as : as ';' a0 {$1 <> [$3]}
@@ -194,7 +197,7 @@ m_fun_args : fun_args {$1}
            | {-empty-} {[]}
 
 function_def :: {FunctionDef AlexPosn}
-function_def : T identifier '(' fun_args ')' '{' actions '}' { $7 |> $4 |> $2 |> $1 |>
+function_def : T identifier '(' m_fun_args ')' '{' actions '}' { $7 |> $4 |> $2 |> $1 |>
                                                     \t (LIdentifier name _) fs as 
                                                       -> FunctionDef t name fs as (getPTypesInfo t) 
                                                   }
