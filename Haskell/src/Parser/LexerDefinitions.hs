@@ -18,10 +18,19 @@ infixr 1 |>
 (|>) = flip ($)
 
 data Token' a 
-  = LChar Text a  
-  | LString Text a 
+  = LCharLit Text a  
+  | LStringLit Text a 
+  | LBoolLit Text a 
   | LNumber Text a
   | LAtom Text a
+  | LBool a
+  | LInt a
+  | LFloat a
+  | LChar a
+  | LString a
+  | LUnit a
+  | LVoid a
+  | LVector a
   | LOBckt a
   | LCBckt a
   | LOBrc a
@@ -77,6 +86,14 @@ data RecordPattern a
 data PTypes a 
   = PAtom Text a
   | PId Text a
+  | PBool a
+  | PInt a
+  | PFloat a
+  | PChar a
+  | PString a
+  | PUnit a
+  | PVoid a
+  | PVector (PTypes a) a
   | PUnion (PTypes a) (PTypes a) 
   | PRecord (RecordPattern a) 
   deriving (Eq,Show)
@@ -86,6 +103,14 @@ getPTypesInfo (PAtom _ a) = a
 getPTypesInfo (PId _ a) = a
 getPTypesInfo (PUnion a _) = getPTypesInfo a
 getPTypesInfo (PRecord (RecordPattern _ _ a)) = a
+getPTypesInfo (PBool a) = a
+getPTypesInfo (PInt a) = a
+getPTypesInfo (PFloat a) = a
+getPTypesInfo (PChar a) = a
+getPTypesInfo (PString a) = a
+getPTypesInfo (PUnit a) = a
+getPTypesInfo (PVoid a) = a
+getPTypesInfo (PVector _ a) = a
 
 data ByRef a = ByRef a deriving (Eq,Show)
 
@@ -116,6 +141,7 @@ data Pattern a
   = PaNumber Text a
   | PaString Text a
   | PaChar Text a
+  | PaBool Text a
   | PaId Text (Maybe (ByRef a)) a
   | PaPattern (RecordPattern a) 
   deriving (Eq,Show)
@@ -155,6 +181,7 @@ data Expression a
   | ENumber Text a
   | EString Text a 
   | EChar Text a
+  | EBool Text a
   | Match (Expression a) [(Pattern a,[Action a])] a
   | FApp Text [Expression a] a
   deriving (Eq,Show)
@@ -183,6 +210,7 @@ getExpressionInfo (Arr _ a) = a
 getExpressionInfo (ENumber _ a) = a
 getExpressionInfo (EString _ a) = a
 getExpressionInfo (EChar _ a) = a
+getExpressionInfo (EBool _ a) = a
 getExpressionInfo (Match _ _ a) = a
 getExpressionInfo (FApp _ _ a) = a
 

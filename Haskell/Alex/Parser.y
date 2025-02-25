@@ -21,10 +21,19 @@ import Control.Lens ((&))
 
 
 %token 
-  char       {LChar _ _}
-  string     {LString _ _}
+  charlit    {LCharLit _ _}
+  stringlit  {LStringLit _ _}
+  boollit  {LBoolLit _ _}
   number     {LNumber _ _}
   atom       {LAtom _ _}
+  bool       {LBool _}
+  int        {LInt _}
+  float      {LFloat _}
+  char       {LChar _}
+  string     {LString _}
+  unit       {LUnit _}
+  void       {LVoid _}
+  vector     {LVector _}
   '['        {LOBckt _}
   ']'        {LCBckt _}
   '{'        {LOBrc _}
@@ -102,6 +111,14 @@ mRecords : {- empty -} {[]}
 
 T0 :: {PTypes AlexPosn}
 T0 : atom {$1 & \(LAtom t p) -> PAtom t p}
+  | bool {$1 & \(LBool p) -> PBool p}
+  | int {$1 & \(LInt p) -> PInt p}
+  | float {$1 & \(LFloat p) -> PFloat p}
+  | char {$1 & \(LChar p) -> PChar p}
+  | string {$1 & \(LString p) -> PString p}
+  | unit {$1 & \(LUnit p) -> PUnit p}
+  | void {$1 & \(LVoid p) -> PVoid p}
+  | vector '<' T '>' {$3 |> $1 |> \(LVector p) ty -> PVector ty p}
   | identifier { $1 & \(LIdentifier t p) -> PId t p}
   | '{' records '}' {PRecord $2}
 
@@ -123,8 +140,9 @@ loop_as : loop_a ';'  {$1}
 
 pattern :: {Pattern AlexPosn}
 pattern : number {$1 |> \(LNumber t p) -> PaNumber t p} 
-         | char {$1 |> \(LChar t p) -> PaChar t p}
-         | string {$1 |> \(LString t p) -> PaString t p}
+         | charlit {$1 |> \(LCharLit t p) -> PaChar t p}
+         | stringlit {$1 |> \(LStringLit t p) -> PaString t p}
+         | boollit {$1 |> \(LBoolLit t p) -> PaBool t p}
          | identifier optionalByRef {$2 |> $1 |> \(LIdentifier t p) mref -> PaId t mref p}
          | '{' records '}' {PaPattern $2}
 
@@ -181,8 +199,9 @@ e : lvaluable { ELValuable $1 }
   | '(' e ')' {$2}
   | '[' args ']' {$1 |> \(LOBckt p) -> Arr $2 p}
   | number {$1 |> \(LNumber t p) -> ENumber t p}
-  | string {$1 |> \(LString t p) -> EString t p}
-  | char {$1 |> \(LChar t p) -> EChar t p}
+  | stringlit {$1 |> \(LStringLit t p) -> EString t p}
+  | charlit {$1 |> \(LCharLit t p) -> EChar t p}
+  | boollit {$1 |> \(LBoolLit t p) -> EBool t p}
   | match e with patterns {$1 |> \(LMatch p) -> Match $2 $4 p}
   | identifier '(' args ')' {$1 |> \(LIdentifier t p) -> FApp t $3 p}
 

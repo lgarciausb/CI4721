@@ -23,14 +23,24 @@ import Data.Functor
 $digit = [0-9]
 $alpha = [a-zA-Z] 
 @id = ( $alpha | \_) ($alpha | \_ | $digit)*
+@bool = "true" | "false" 
 
 tokens :-
   <0>  $white+ ;
-  <0> "'" ("\\'" | ~') "'"   {token $ \(pos,_,_,s) l -> LChar (T.take l s) pos                     }
+  <0> "'" ("\\'" | ~') "'"   {token $ \(pos,_,_,s) l -> LCharLit (T.take l s) pos                     }
   <0> $digit+ ("." $digit+ | [e E] ("+" | "-")? $digit+)? {token $ \(pos,_,_,s) l -> LNumber (T.take l s) pos }
+  <0> @bool         {token $ \(pos,_,_,s) l -> LBoolLit (T.tail $ T.take l s) pos                    }
   <0> "#" @id         {token $ \(pos,_,_,s) l -> LAtom (T.tail $ T.take l s) pos                    }
+  <0> "bool"         {token $ \(pos,_,_,_) _ -> LBool pos                                                 }
+  <0> "int"         {token $ \(pos,_,_,_) _ -> LInt pos                                                 }
+  <0> "float"         {token $ \(pos,_,_,_) _ -> LFloat pos                                                 }
+  <0> "char"         {token $ \(pos,_,_,_) _ -> LChar pos                                                 }
+  <0> "string"         {token $ \(pos,_,_,_) _ -> LString pos                                                 }
+  <0> "unit"         {token $ \(pos,_,_,_) _ -> LUnit pos                                                 }
+  <0> "void"         {token $ \(pos,_,_,_) _ -> LVoid pos                                                 }
+  <0> "vector"         {token $ \(pos,_,_,_) _ -> LVector pos                                                 }
   <0> "["            {token $ \ (pos,_,_,_) _ -> LOBckt pos                                               }
-  <0> "]"            {token $ \ (pos,_,_,_) _ -> LCBckt pos                                              }
+  <0> "]"            {token $ \ (pos,_,_,_) _ -> LCBckt pos                                               }
   <0> "{"            {token $ \ (pos,_,_,_) _ -> LOBrc  pos                                               }
   <0> "}"            {token $ \ (pos,_,_,_) _ -> LCBrc  pos                                               }
   <0> "("            {token $ \ (pos,_,_,_) _ -> LOParen pos                                              }
@@ -112,7 +122,7 @@ endString (pos,_,_,_) _ = do
  buf <- _austTextBuff <$> alexGetUserState
  alexModifyUserState (\s -> s{_austTextBuff = mempty})
  modify $ \s -> s{alex_scd=0}
- pure $ LString (T.reverse buf) pos
+ pure $ LStringLit (T.reverse buf) pos
 
 beginComment :: AlexAction Token 
 beginComment i _ = alexModifyUserState (\s 
@@ -127,7 +137,7 @@ endComment i@(pos,_,_,_) l = do
   case _austCommentDepth s of 
     0 -> do 
       modify (\s -> s{alex_scd = 0})
-      pure $ LString (T.reverse $ _austCommentBuff s) pos
+      pure $ LStringLit (T.reverse $ _austCommentBuff s) pos
     _ -> appendComment i l
 
 appendComment :: AlexAction Token
