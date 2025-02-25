@@ -1,6 +1,8 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE DeriveFoldable      #-}
+{-# LANGUAGE DeriveFunctor       #-}
 {-# LANGUAGE GADTs               #-}
 module Parser.LexerDefinitions where 
 
@@ -47,7 +49,9 @@ data Token' a
   | LComment Text a
   | LDot a
   | LEOF 
-  deriving (Eq, Show)
+  deriving (Show,Eq,Functor,Foldable)
+
+
 
 data RecordPattern a 
   = RecordPattern  (Text, PTypes a, a) [(Text,PTypes a, a)] a
@@ -78,6 +82,11 @@ data LValuable a
   | PLIndexed Text [Expression a] a
   | PLDot Text (LValuable a) a
 
+getLValueInfo :: LValuable a -> a
+getLValueInfo (PLId _ a) = a
+getLValueInfo (PLIndexed _ _ a) = a
+getLValueInfo (PLDot _ _ a) = a
+
 data LoopAction a 
   = Break a
   | Continue a 
@@ -97,7 +106,73 @@ data Action a
   | AExpression (Expression a)
 
 
+
 data Expression a  
+  = ELValuable (LValuable a)
+  | New (PTypes a) [Expression a] a
+  | Ref (Expression a) a
+  | Neg (Expression a) a
+  | Plus (Expression a) (Expression a) a
+  | Times (Expression a) (Expression a) a
+  | Divide (Expression a) (Expression a) a
+  | Power (Expression a) (Expression a) a
+  | Mod (Expression a) (Expression a) a
+  | Minus (Expression a) (Expression a) a
+  | ELT (Expression a) (Expression a) a
+  | EGT (Expression a) (Expression a) a
+  | NotEq (Expression a) (Expression a) a
+  | EEq (Expression a) (Expression a) a
+  | EGTEq (Expression a) (Expression a) a
+  | ELTEq (Expression a) (Expression a) a
+  | Or (Expression a) (Expression a) a
+  | And (Expression a) (Expression a) a
+  | Not (Expression a) a
+  | Arr [Expression a] a
+  | ENumber Text a
+  | EString Text a 
+  | EChar Text a
+  | Match (Expression a) [(Pattern a,[Action a])] a
+  | FApp Text [Expression a] a
+
+getExpressionInfo :: Expression a -> a
+getExpressionInfo (ELValuable a) = getLValueInfo a
+getExpressionInfo (New _ _ a) = a
+getExpressionInfo (Ref _ a) = a
+getExpressionInfo (Neg _ a) = a
+getExpressionInfo (Plus _ _ a) = a
+getExpressionInfo (Times _ _ a) = a
+getExpressionInfo (Divide _ _ a) = a
+getExpressionInfo (Power _ _ a) = a
+getExpressionInfo (Mod _ _ a) = a
+getExpressionInfo (Minus _ _ a) = a
+getExpressionInfo (ELT _ _ a) = a
+getExpressionInfo (EGT _ _ a) = a
+getExpressionInfo (NotEq _ _ a) = a
+getExpressionInfo (EEq _ _ a) = a
+getExpressionInfo (EGTEq _ _ a) = a
+getExpressionInfo (ELTEq _ _ a) = a
+getExpressionInfo (Or _ _ a) = a
+getExpressionInfo (And _ _ a) = a
+getExpressionInfo (Not _ a) = a
+getExpressionInfo (Arr _ a) = a
+getExpressionInfo (ENumber _ a) = a
+getExpressionInfo (EString _ a) = a
+getExpressionInfo (EChar _ a) = a
+getExpressionInfo (Match _ _ a) = a
+getExpressionInfo (FApp _ _ a) = a
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 -- instance Show Token where 
 --   show (LChar t)       = "'" <> T.unpack t <> "'"

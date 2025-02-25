@@ -154,32 +154,32 @@ optionalByRef : by reference {$1 & \(LBy p) -> Just $ ByRef p  }
               | {- empty -} {Nothing}
 
 e :: {Expression AlexPosn}
-e : lvaluable {undefined}
-  | new T '(' args ')' {undefined}
-  | '&' lvaluable {undefined}
-  | '-' e %prec NEG {undefined}
-  | e '+' e {undefined}
-  | e '*' e {undefined}
-  | e '/' e {undefined}
-  | e '^' e {undefined}
-  | e '%' e {undefined}
-  | e '-' e {undefined}
-  | e '<' e {undefined}
-  | e '>' e {undefined}
-  | e '!='e {undefined}
-  | e '==' e {undefined}
-  | e '>=' e {undefined}
-  | e '<=' e {undefined}
-  | e '||' e {undefined}
-  | e '&&' e {undefined}
-  | '~' e {undefined}
-  | '(' e ')' {undefined}
-  | '[' args ']' {undefined}
-  | number {undefined}
-  | string {undefined}
-  | char {undefined}
-  | match e with patterns {undefined}
-  | identifier '(' args ')' {undefined}
+e : lvaluable { ELValuable $1 }
+  | new T '(' args ')' {$1 |> \(LNew p) -> New $2 $4 p}
+  | '&' e {$1 |> \(LOp "&" p) -> Ref $2 p}
+  | '-' e %prec NEG {$1 |> \(LOp "-" p) -> Neg $2 p}
+  | e '+' e {Plus $1 $3 (getExpressionInfo $1)}
+  | e '*' e {Times $1 $3 (getExpressionInfo $1)}
+  | e '/' e {Divide $1 $3 (getExpressionInfo $1)}
+  | e '^' e {Power $1 $3 (getExpressionInfo $1)}
+  | e '%' e {Mod $1 $3 (getExpressionInfo $1)}
+  | e '-' e {Minus $1 $3 (getExpressionInfo $1)}
+  | e '<' e {ELT $1 $3 (getExpressionInfo $1)}
+  | e '>' e {EGT $1 $3 (getExpressionInfo $1)}
+  | e '!='e {NotEq $1 $3 (getExpressionInfo $1)}
+  | e '==' e {EEq $1 $3 (getExpressionInfo $1)}
+  | e '>=' e {EGTEq $1 $3 (getExpressionInfo $1)}
+  | e '<=' e {ELTEq $1 $3 (getExpressionInfo $1)}
+  | e '||' e {Or $1 $3 (getExpressionInfo $1)}
+  | e '&&' e {And $1 $3 (getExpressionInfo $1)}
+  | '~' e {$1 |> \(LOp "~" p) -> Not $2 p }
+  | '(' e ')' {$2}
+  | '[' args ']' {$1 |> \(LOBckt p) -> Arr $2 p}
+  | number {$1 |> \(LNumber t p) -> ENumber t p}
+  | string {$1 |> \(LString t p) -> EString t p}
+  | char {$1 |> \(LChar t p) -> EChar t p}
+  | match e with patterns {$1 |> \(LMatch p) -> Match $2 $4 p}
+  | identifier '(' args ')' {$1 |> \(LIdentifier t p) -> FApp t $3 p}
 
 
 fun_args :: {FunArgs AlexPosn}
