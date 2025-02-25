@@ -81,9 +81,12 @@ instance Scope (PTypes AlexPosn) where
       <> "; Type not in scope."
       )
     pure e0
+  checkScoping (PVector p _) = checkScoping p
 
   checkScoping (PUnion a b) = checkScoping a *> checkScoping b
   checkScoping (PRecord x) = checkScoping x
+  checkScoping _ = ask
+
 
 instance Scope (FunArg AlexPosn) where
   checkScoping (FunArg t v _ (AlexPn _ l c)) = do 
@@ -114,9 +117,22 @@ instance Scope (Definition AlexPosn) where
       <> v
       <> ". Symbol already defined."
       )
-    e1 <- declareFresh @'() @Void1 v e0 >>= \e0' -> local (const e0') $ checkScoping fs
-    local (const e1) $ checkScoping as
-
+    e0' <- declareFresh @'() @Void1 v e0
+    e1  <-  local (const e0') $ checkScoping fs
+    _ <- local (const e1) $ checkScoping as
+    pure e0'
+  checkScoping (TypeDef t p (AlexPn _ l c)) = ask >>= \e0 -> do 
+    let m0 = t `inScope` e0
+    when m0 $ appendToLog 
+      ( "Scope error at line: "
+      <> T.show l
+      <> ", column: "
+      <> T.show c
+      <> "; at the declaration of the type: "
+      <> t
+      <> ". Type already defined"
+      )
+    declareFresh @'() @Void1 t e0 >>= \e1 -> local (const e1) $ checkScoping p
 
 instance Scope (LValuable AlexPosn) where
   checkScoping (PLId v (AlexPn _ l c)) = ask >>= \d -> case v `inScope` d of
@@ -147,6 +163,24 @@ instance Scope (Action AlexPosn) where
   checkScoping (Assign x e) = checkScoping x >> checkScoping e 
   checkScoping (AExpression e) = checkScoping e 
   checkScoping (Return e _) = checkScoping e
+  checkScoping (Declare ty t me) = ask >>= \e0 -> do
+    let m0 = t `inScope` e0
+    let (AlexPn _ l c) = getPTypesInfo ty 
+    _ <- checkScoping ty 
+    when m0 $ appendToLog 
+      ( "Scope error at line: "
+      <> T.show l
+      <> ", column: "
+      <> T.show c
+      <> "; at the declaration of the symbol: "
+      <> t
+      <> ". Symbol already defined"
+      )
+    e1 <- declareFresh @'() @Void1 t e0 
+    traverse_ (local (const e1) . checkScoping) me
+    pure e1
+    
+
 
 instance Scope (LoopAction AlexPosn) where 
   checkScoping (LAction a) = checkScoping a
@@ -178,6 +212,7 @@ instance Scope (Expression AlexPosn) where
     >> ask
   checkScoping (FApp f args (AlexPn _ l c)) = ask >>= \env0 -> do 
     when (f `notInScope` env0) $ appendToLog
+
       ( "Scope error at line " 
       <> T.show l 
       <> ", column " 
@@ -196,5 +231,22 @@ instance Scope a => Scope [a] where
 instance (Scope a,Scope b) => Scope (a,b) where  
   checkScoping (a,b) = checkScoping a >>= \d -> local (const d) $ checkScoping b
 
+newtype DefinitionSeq = DefinitionSeq [Definition AlexPosn]
+
+instance Scope DefinitionSeq where 
+  checkScoping (DefinitionSeq []) = ask 
+  checkScoping (DefinitionSeq (d@(FunctionDef {}) : ds) ) = checkScoping d >> checkScoping (DefinitionSeq ds)
+  checkScoping (DefinitionSeq (d:ds)) = checkScoping d >>= \env -> local (const env) $ checkScoping $ DefinitionSeq ds
+
+stdLibrary :: IO (TypeRepMap () Void1)
+stdLibrary = foldM (flip $ declareFresh @'() @Void1) empty $ 
+  [ "print"
+  , "to_string"
+  , "to_int"
+  , "input"
+  , "pop"
+  , "append"
+  ] 
+
 runScopeIO :: [Definition AlexPosn] -> IO ErrLogs
-runScopeIO xs = execWriterT $ runReaderT (checkScoping  xs) empty
+runScopeIO xs = stdLibrary >>= \lib -> execWriterT $ runReaderT (checkScoping xs) lib

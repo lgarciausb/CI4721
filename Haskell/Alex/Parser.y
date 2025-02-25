@@ -2,6 +2,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE LambdaCase          #-}
 module Parser.Parser where 
 
 import Parser.Lexer
@@ -78,6 +79,7 @@ import Control.Lens ((&))
   return    {LReturn _}
 
 %nonassoc return
+%left ','
 %right '||' 
 %right '&&'
 %left '<' '>' '==' '!=' '>=' '<=' 
@@ -162,6 +164,8 @@ a0 : e {AExpression $1}
    | T identifier ':=' e { $4 |> $2 |> $1 |> \ty (LIdentifier t _) e -> Declare ty t (Just e)}
    | T identifier { $2 |> $1 |> \ty (LIdentifier t _) -> Declare ty t Nothing}
    | return e {$1 |> \(LReturn p) -> Return $2 p} 
+   | return unit {$2 |> $1 |> \(LReturn p) (LUnit p') -> Return (EUnit p') p} 
+ 
 
 as :: {[Action AlexPosn]}
 as : as ';' a0 {$1 <> [$3]}
@@ -232,6 +236,8 @@ parseError _ = do
   alexError $ "Parse error at line " <> show line <> ", column " <> show column
 
 lexer :: (Token -> Alex a) -> Alex a
-lexer = (=<< alexMonadScan)
+lexer f = alexMonadScan >>= \case 
+  LComment {} -> lexer f
+  t -> f t
 
 }

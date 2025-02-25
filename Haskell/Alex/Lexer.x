@@ -137,7 +137,7 @@ endComment i@(pos,_,_,_) l = do
   case _austCommentDepth s of 
     0 -> do 
       modify (\s -> s{alex_scd = 0})
-      pure $ LStringLit (T.reverse $ _austCommentBuff s) pos
+      pure $ LComment (T.reverse $ _austCommentBuff s) pos
     _ -> appendComment i l
 
 appendComment :: AlexAction Token

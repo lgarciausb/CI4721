@@ -20,5 +20,5 @@ alex:
 happy: alex 
   happy -i ./Alex/Parser.y -o ./src/Parser/Parser.hs
 
-parse: build 
-  cabal run Haskell-exe
+parse *args='./programs/*' : build 
+  cabal run Haskell-exe -- {{args}}

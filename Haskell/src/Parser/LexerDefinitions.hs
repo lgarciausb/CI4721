@@ -186,6 +186,7 @@ data Expression a
   | EBool Text a
   | Match (Expression a) [(Pattern a,[Action a])] a
   | FApp Text [Expression a] a
+  | EUnit a
   deriving (Eq,Show)
 
 getExpressionInfo :: Expression a -> a
