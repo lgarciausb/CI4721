@@ -30,6 +30,8 @@ library
       Parser.LexerDefinitions
       Parser.Parser
       Parser.Runner
+      Parser.ScopeCheck
+      TypedMap
   other-modules:
       Paths_Haskell
   autogen-modules:
