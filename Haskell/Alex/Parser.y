@@ -67,7 +67,9 @@ import Control.Lens ((&))
   '&&'       {LOp "&&" _}
   '~'        {LOp "~"  _}
   '&'        {LOp "&" _}
+  'return'   {LIdentifier "return" _}
 
+%nonassoc 'return'
 %right '||' 
 %right '&&'
 %left '<' '>' '==' '!=' '>=' '<=' 
@@ -140,6 +142,7 @@ a0 : e {AExpression $1}
                                         \(LWhile p) e as -> While e as p
                                       }
    | lvaluable ':=' e {Assign $1 $3}
+   | 'return' e {$1 |> \(LIdentifier _ p) -> Return $2 p} 
 
 as :: {[Action AlexPosn]}
 as : as ';' a0 {$1 <> [$3]}
@@ -183,16 +186,17 @@ e : lvaluable { ELValuable $1 }
 
 
 fun_args :: {FunArgs AlexPosn}
-fun_args  : T identifier optionalByRef  ',' fun_args { $5 |> $3 |> $2 |> $1 |>
-                                                       \t (LIdentifier x _) mref fs 
-                                                        -> FunArg t x mref (getPTypesInfo t) : fs
-                                                     }
-          | {-empty-} {[]}
+fun_args  : fun_args ',' fun_args { $1 <> $3 }  
+          | T identifier optionalByRef {$3 |> $2 |> $1 |> \t (LIdentifier x _) mref -> [FunArg t x mref $ getPTypesInfo t]}
+
+m_fun_args :: {[FunArg AlexPosn]}
+m_fun_args : fun_args {$1}
+           | {-empty-} {[]}
 
 function_def :: {FunctionDef AlexPosn}
-function_def : T '(' fun_args ')' '{' actions '}' { $6 |> $3 |> $1 |>
-                                                    \t fs as 
-                                                      -> FunctionDef t fs as (getPTypesInfo t) 
+function_def : T identifier '(' fun_args ')' '{' actions '}' { $7 |> $4 |> $2 |> $1 |>
+                                                    \t (LIdentifier name _) fs as 
+                                                      -> FunctionDef t name fs as (getPTypesInfo t) 
                                                   }
 function_defs :: {[FunctionDef AlexPosn]}
 function_defs : function_defs function_def {$1 <> [$2]}

@@ -4,6 +4,12 @@ import Parser.Lexer
 import qualified Data.Text as T
 import Parser.LexerDefinitions
 import Data.Foldable
-main :: IO ()
-main = readFile "./programs/string.md" >>=  print . scanMany . T.pack
+import Parser.Parser 
 
+main :: IO ()
+main = do 
+  cs <- T.pack <$> readFile "./programs/fibo.md" 
+  print . scanMany $ cs 
+  case runAlex cs parse of 
+    Left e -> print e
+    Right xs -> traverse_ print xs

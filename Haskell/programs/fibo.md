@@ -3,6 +3,7 @@ int fibo(int n){
     0 => {return n;}
     1 => {return n;}
     _ => {return fibo(n-1) + fibo(n-2);}
+  ;
 
 }
 

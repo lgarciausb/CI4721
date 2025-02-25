@@ -55,6 +55,7 @@ data Token' a
 
 data RecordPattern a 
   = RecordPattern  (Text, PTypes a, a) [(Text,PTypes a, a)] a
+  deriving (Eq,Show)
 
 
 data PTypes a 
@@ -62,6 +63,7 @@ data PTypes a
   | PId Text a
   | PUnion (PTypes a) (PTypes a) 
   | PRecord (RecordPattern a) 
+  deriving (Eq,Show)
 
 getPTypesInfo :: PTypes a -> a
 getPTypesInfo (PAtom _ a) = a
@@ -69,18 +71,19 @@ getPTypesInfo (PId _ a) = a
 getPTypesInfo (PUnion a _) = getPTypesInfo a
 getPTypesInfo (PRecord (RecordPattern _ _ a)) = a
 
-data ByRef a = ByRef a
+data ByRef a = ByRef a deriving (Eq,Show)
 
-data FunArg a = FunArg (PTypes a) Text (Maybe (ByRef a)) a
+data FunArg a = FunArg (PTypes a) Text (Maybe (ByRef a)) a deriving (Eq,Show)
 
 type FunArgs a = [FunArg a]
 
-data FunctionDef a = FunctionDef (PTypes a) [FunArg a] [Action a] a
+data FunctionDef a = FunctionDef (PTypes a) Text [FunArg a] [Action a] a deriving (Eq,Show)
 
 data LValuable a 
   = PLId Text a 
   | PLIndexed Text [Expression a] a
   | PLDot Text (LValuable a) a
+  deriving (Eq,Show)
 
 getLValueInfo :: LValuable a -> a
 getLValueInfo (PLId _ a) = a
@@ -91,6 +94,7 @@ data LoopAction a
   = Break a
   | Continue a 
   | LAction (Action a)
+  deriving (Eq,Show)
 
 data Pattern a
   = PaNumber Text a
@@ -98,13 +102,15 @@ data Pattern a
   | PaChar Text a
   | PaId Text (Maybe (ByRef a)) a
   | PaPattern (RecordPattern a) 
+  deriving (Eq,Show)
 
 data Action a
   = For (Pattern a) (Expression a) [LoopAction a] a
   | While (Expression a) [LoopAction a] a
   | Assign (LValuable a) (Expression a)
   | AExpression (Expression a)
-
+  | Return (Expression a) a
+  deriving (Eq,Show)
 
 
 data Expression a  
@@ -133,6 +139,7 @@ data Expression a
   | EChar Text a
   | Match (Expression a) [(Pattern a,[Action a])] a
   | FApp Text [Expression a] a
+  deriving (Eq,Show)
 
 getExpressionInfo :: Expression a -> a
 getExpressionInfo (ELValuable a) = getLValueInfo a
