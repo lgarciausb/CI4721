@@ -21,9 +21,8 @@ import Data.Functor
 %wrapper "monadUserState-strict-text"
 
 $digit = [0-9]
-$alpha = [a-zA-Z]
-@operators = "+" | "-" | "*" | "/" | "^" | "%" | "<" | ">" | "!=" | "==" | ">=" | "<=" | "||" | "&&" | "~" | "&"
-@id = ( $alpha | \_) ($alpha | \_ | digit)*
+$alpha = [a-zA-Z] 
+@id = ( $alpha | \_) ($alpha | \_ | $digit)*
 
 tokens :-
   <0>  $white+ ;
@@ -51,8 +50,23 @@ tokens :-
   <0> "break"        {token $ \ (pos,_,_,_) _ -> LBreak      pos                                          }
   <0> "new"          {token $ \ (pos,_,_,_) _ -> LNew        pos                                          }
   <0> "by"           {token $ \ (pos,_,_,_) _ -> LBy         pos                                          }
+  <0> "+"           {token $ \ (pos,_,_,_) _ -> LPlus         pos                                          }
+  <0> "-"           {token $ \ (pos,_,_,_) _ -> LMinus         pos                                          }
+  <0> "*"           {token $ \ (pos,_,_,_) _ -> LMult         pos                                          }
+  <0> "/"           {token $ \ (pos,_,_,_) _ -> LDiv         pos                                          }
+  <0> "^"           {token $ \ (pos,_,_,_) _ -> LPow         pos                                          }
+  <0> "%"           {token $ \ (pos,_,_,_) _ -> LMod         pos                                          }
+  <0> "<"           {token $ \ (pos,_,_,_) _ -> LLT         pos                                          }
+  <0> ">"           {token $ \ (pos,_,_,_) _ -> LGT         pos                                          }
+  <0> "<="           {token $ \ (pos,_,_,_) _ -> LLTE         pos                                          }
+  <0> ">="           {token $ \ (pos,_,_,_) _ -> LGTE         pos                                          }
+  <0> "=="           {token $ \ (pos,_,_,_) _ -> LEq         pos                                          }
+  <0> "!="           {token $ \ (pos,_,_,_) _ -> LNEq         pos                                          }
+  <0> "||"           {token $ \ (pos,_,_,_) _ -> LOr         pos                                          }
+  <0> "&&"           {token $ \ (pos,_,_,_) _ -> LAnd         pos                                          }
+  <0> "~"           {token $ \ (pos,_,_,_) _ -> LNot         pos                                          }
+  <0> "&"           {token $ \ (pos,_,_,_) _ -> LRef         pos                                          }
   <0> "reference"    {token $ \ (pos,_,_,_) _ -> LReference  pos                                          }
-  <0> @operators     {token $ \(pos,_,_,s) l -> LOp (T.take l s) pos                               }
   <0> "|"            {token $ \(pos,_,_,_) _ -> LVBar pos                                                   }
   <0> "."            {token $ \(pos,_,_,_) _ -> LDot pos                                                   }
   <0> @id            {token $ \(pos,_,_,s) l -> LIdentifier (T.take l s) pos                       } 

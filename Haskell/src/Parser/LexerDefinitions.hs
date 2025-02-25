@@ -44,7 +44,22 @@ data Token' a
   | LNew a
   | LBy a
   | LReference a
-  | LOp Text a
+  | LPlus a
+  | LMinus a
+  | LMult a
+  | LDiv a
+  | LPow a
+  | LMod a
+  | LLT a
+  | LGT a
+  | LNEq a
+  | LEq a
+  | LGTE a
+  | LLTE a
+  | LOr a
+  | LAnd a
+  | LNot a
+  | LRef a
   | LVBar a
   | LIdentifier Text a
   | LComment Text a

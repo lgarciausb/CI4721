@@ -46,27 +46,26 @@ import Control.Lens ((&))
   new        {LNew _}
   by         {LBy _}
   reference  {LReference _}
-  '***'      {LOp _ _}
   '|'        {LVBar _}
   identifier {LIdentifier _ _}
   '.'        {LDot _}
   EOF        {LEOF}
-  '+'        {LOp "+" _}
-  '-'        {LOp "-" _}
-  '*'        {LOp "*" _}
-  '/'        {LOp "/" _}
-  '^'        {LOp "^" _}
-  '%'        {LOp "%" _}
-  '<'        {LOp "<" _}
-  '>'        {LOp ">" _}
-  '!='       {LOp "!=" _}
-  '=='       {LOp "==" _}
-  '>='       {LOp ">=" _}
-  '<='       {LOp "<=" _}
-  '||'       {LOp "||" _}
-  '&&'       {LOp "&&" _}
-  '~'        {LOp "~"  _}
-  '&'        {LOp "&" _}
+  '+'        {LPlus _}
+  '-'        {LMinus _}
+  '*'        {LMult _}
+  '/'        {LDiv _}
+  '^'        {LPow _}
+  '%'        {LMod _}
+  '<'        {LLT _}
+  '>'        {LGT _}
+  '!='       {LNEq _}
+  '=='       {LEq _}
+  '>='       {LGTE _}
+  '<='       {LLTE _}
+  '||'       {LOr _}
+  '&&'       {LAnd _}
+  '~'        {LNot  _}
+  '&'        {LRef _}
   return    {LReturn _}
 
 %nonassoc return
@@ -162,8 +161,8 @@ optionalByRef : by reference {$1 & \(LBy p) -> Just $ ByRef p  }
 e :: {Expression AlexPosn}
 e : lvaluable { ELValuable $1 }
   | new T '(' args ')' {$1 |> \(LNew p) -> New $2 $4 p}
-  | '&' e {$1 |> \(LOp "&" p) -> Ref $2 p}
-  | '-' e %prec NEG {$1 |> \(LOp "-" p) -> Neg $2 p}
+  | '&' e {$1 |> \(LRef p) -> Ref $2 p}
+  | '-' e %prec NEG {$1 |> \(LMinus p) -> Neg $2 p}
   | e '+' e {Plus $1 $3 (getExpressionInfo $1)}
   | e '*' e {Times $1 $3 (getExpressionInfo $1)}
   | e '/' e {Divide $1 $3 (getExpressionInfo $1)}
@@ -178,7 +177,7 @@ e : lvaluable { ELValuable $1 }
   | e '<=' e {ELTEq $1 $3 (getExpressionInfo $1)}
   | e '||' e {Or $1 $3 (getExpressionInfo $1)}
   | e '&&' e {And $1 $3 (getExpressionInfo $1)}
-  | '~' e {$1 |> \(LOp "~" p) -> Not $2 p }
+  | '~' e {$1 |> \(LNot p) -> Not $2 p }
   | '(' e ')' {$2}
   | '[' args ']' {$1 |> \(LOBckt p) -> Arr $2 p}
   | number {$1 |> \(LNumber t p) -> ENumber t p}
