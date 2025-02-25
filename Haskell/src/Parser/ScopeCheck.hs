@@ -104,7 +104,7 @@ instance Scope (FunArg AlexPosn) where
     declareFresh @'() @Void1 v e0
 
 
-instance Scope (FunctionDef AlexPosn) where
+instance Scope (Definition AlexPosn) where
   checkScoping (FunctionDef t v fs as (AlexPn _ l _)) = do 
     _ <-  checkScoping t 
     e0 <- ask 
@@ -118,6 +118,7 @@ instance Scope (FunctionDef AlexPosn) where
       )
     e1 <- declareFresh @'() @Void1 v e0 >>= \e0' -> local (const e0') $ checkScoping fs
     local (const e1) $ checkScoping as
+
 
 instance Scope (LValuable AlexPosn) where
   checkScoping (PLId v (AlexPn _ l c)) = ask >>= \d -> case v `inScope` d of
@@ -197,5 +198,5 @@ instance Scope a => Scope [a] where
 instance (Scope a,Scope b) => Scope (a,b) where  
   checkScoping (a,b) = checkScoping a >>= \d -> local (const d) $ checkScoping b
 
-runScopeIO :: [FunctionDef AlexPosn] -> IO ErrLogs
+runScopeIO :: [Definition AlexPosn] -> IO ErrLogs
 runScopeIO xs = execWriterT $ runReaderT (checkScoping  xs) empty

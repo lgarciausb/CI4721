@@ -118,7 +118,10 @@ data FunArg a = FunArg (PTypes a) Text (Maybe (ByRef a)) a deriving (Eq,Show)
 
 type FunArgs a = [FunArg a]
 
-data FunctionDef a = FunctionDef (PTypes a) Text [FunArg a] [Action a] a deriving (Eq,Show)
+data Definition a 
+  = FunctionDef (PTypes a) Text [FunArg a] [Action a] a
+  | TypeDef Text (PTypes a) a 
+  deriving (Eq,Show)
 
 data LValuable a 
   = PLId Text a 
@@ -151,7 +154,6 @@ data Action a
   | While (Expression a) [LoopAction a] a
   | Assign (LValuable a) (Expression a)
   | Declare (PTypes a) Text (Maybe (Expression a))
-  | TypeDef Text (PTypes a) a
   | AExpression (Expression a)
   | Return (Expression a) a
   deriving (Eq,Show)

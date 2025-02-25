@@ -12,7 +12,7 @@ import Control.Lens ((&))
 }
 
 
-%name parse function_defs
+%name parse definitions
 %tokentype { Token }
 %error { parseError }
 %monad { Alex } { >>= } { pure }
@@ -159,7 +159,6 @@ a0 : e {AExpression $1}
                                         \(LWhile p) e as -> While e as p
                                       }
    | lvaluable ':=' e {Assign $1 $3}
-   | type identifier ':=' T { $4 |> $2 |> $1 |> \(LType p) (LIdentifier t _) ty -> TypeDef t ty p}
    | T identifier ':=' e { $4 |> $2 |> $1 |> \ty (LIdentifier t _) e -> Declare ty t (Just e)}
    | T identifier { $2 |> $1 |> \ty (LIdentifier t _) -> Declare ty t Nothing}
    | return e {$1 |> \(LReturn p) -> Return $2 p} 
@@ -214,14 +213,17 @@ m_fun_args :: {[FunArg AlexPosn]}
 m_fun_args : fun_args {$1}
            | {-empty-} {[]}
 
-function_def :: {FunctionDef AlexPosn}
-function_def : T identifier '(' m_fun_args ')' '{' actions '}' { $7 |> $4 |> $2 |> $1 |>
+definition :: {Definition AlexPosn}
+definition : T identifier '(' m_fun_args ')' '{' actions '}' { $7 |> $4 |> $2 |> $1 |>
                                                     \t (LIdentifier name _) fs as 
                                                       -> FunctionDef t name fs as (getPTypesInfo t) 
                                                   }
-function_defs :: {[FunctionDef AlexPosn]}
-function_defs : function_defs function_def {$1 <> [$2]}
-              | function_def {[$1]}
+           | type identifier ':=' T { $4 |> $2 |> $1 |> \(LType p) (LIdentifier t _) ty -> TypeDef t ty p} 
+           
+definitions :: {[Definition AlexPosn]}
+definitions :  definitions definition {$1 <> [$2]}
+            | definition {[$1]}
+
 
 {
 parseError :: Token -> Alex a
