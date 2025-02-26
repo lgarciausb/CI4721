@@ -209,16 +209,16 @@ e : lvaluable { ELValuable $1 }
   | identifier '(' args ')' {$1 |> \(LIdentifier t p) -> FApp t $3 p}
 
 
-fun_args :: {FunArgs AlexPosn}
-fun_args  : fun_args ',' fun_args { $1 <> $3 }  
+fun_params :: {FunArgs AlexPosn}
+fun_params  : fun_params ',' fun_params { $1 <> $3 }  
           | T identifier optionalByRef {$3 |> $2 |> $1 |> \t (LIdentifier x _) mref -> [FunArg t x mref $ getPTypesInfo t]}
 
-m_fun_args :: {[FunArg AlexPosn]}
-m_fun_args : fun_args {$1}
+m_fun_params :: {[FunArg AlexPosn]}
+m_fun_params : fun_params {$1}
            | {-empty-} {[]}
 
 definition :: {Definition AlexPosn}
-definition : T identifier '(' m_fun_args ')' '{' actions '}' { $7 |> $4 |> $2 |> $1 |>
+definition : T identifier '(' m_fun_params ')' '{' actions '}' { $7 |> $4 |> $2 |> $1 |>
                                                     \t (LIdentifier name _) fs as 
                                                       -> FunctionDef t name fs as (getPTypesInfo t) 
                                                   }
