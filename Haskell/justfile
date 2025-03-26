@@ -14,6 +14,17 @@ clean:
   cabal clean
   rm -rf ./dist/**
 
+clean-profile:
+  rm Haskell-exe.eventlog
+  rm Haskell-exe.hp
+  rm Haskell-exe.prof
+  rm Haskell-exe.eventlog.html
+
+profile *args='./programs/nested': build 
+  cabal run Haskell-exe -- {{args}}
+  eventlog2html ./Haskell-exe.eventlog 
+  firefox ./Haskell-exe.eventlog.html
+
 alex:
   alex ./Alex/Lexer.x  -o ./src/Parser/Lexer.hs
 

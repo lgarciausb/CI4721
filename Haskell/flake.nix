@@ -25,6 +25,8 @@
               pkgs.haskellPackages.hoogle
               pkgs.haskellPackages.alex 
               pkgs.haskellPackages.happy
+              pkgs.haskellPackages.eventlog2html
+
             ];
         };
       };
