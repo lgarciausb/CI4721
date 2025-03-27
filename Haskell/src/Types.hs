@@ -26,6 +26,7 @@
 {-# LANGUAGE TemplateHaskell          #-}
 -- Template haskell warnings
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Types where
 
@@ -119,6 +120,9 @@ pattern Record as = TCon "Record" as
 pattern a :~.: b  = TCon "~." [a,b]
 pattern TString a = TCon a []
 pattern AUnit     = TCon "AUnit" []
+pattern Bottom    = TCon "Bottom" []
+
+
 
 infixr 0 :~>
 infixr 2 :~|:
@@ -140,6 +144,7 @@ type PRecord as = PTCon "Record" as
 type a :~~.: b  = PTCon "~." [a,b]
 type PTString a = PTCon a '[]
 type PAUnit     = PTCon "AUnit" '[]
+type PBottom    = PTCon "Bottom" '[]
 
 type family IsRecord (a :: PTypes) :: Bool where 
   IsRecord (PTCon "Record" _) = True 

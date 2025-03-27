@@ -88,11 +88,11 @@ Grammar
 	e -> boollit                                       (77)
 	e -> match e with patterns                         (78)
 	e -> identifier '(' args ')'                       (79)
-	fun_args -> fun_args ',' fun_args                  (80)
-	fun_args -> T identifier optionalByRef             (81)
-	m_fun_args -> fun_args                             (82)
-	m_fun_args ->                                      (83)
-	definition -> T identifier '(' m_fun_args ')' '{' actions '}'   (84)
+	fun_params -> fun_params ',' fun_params            (80)
+	fun_params -> T identifier optionalByRef           (81)
+	m_fun_params -> fun_params                         (82)
+	m_fun_params ->                                    (83)
+	definition -> T identifier '(' m_fun_params ')' '{' actions '}'   (84)
 	definition -> type identifier ':=' T               (85)
 	definitions -> definitions definition              (86)
 	definitions -> definition                          (87)
@@ -177,8 +177,8 @@ Non-terminals
 	actions         rules 49, 50
 	optionalByRef   rules 51, 52
 	e               rules 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79
-	fun_args        rules 80, 81
-	m_fun_args      rules 82, 83
+	fun_params      rules 80, 81
+	m_fun_params    rules 82, 83
 	definition      rules 84, 85
 	definitions     rules 86, 87
 
@@ -261,7 +261,7 @@ State 3
 State 4
 
 	T -> T . '|' T0                                     (rule 24)
-	definition -> T . identifier '(' m_fun_args ')' '{' actions '}'    (rule 84)
+	definition -> T . identifier '(' m_fun_params ')' '{' actions '}'    (rule 84)
 
 	'|'            shift, and enter state 24
 	identifier     shift, and enter state 25
@@ -626,7 +626,7 @@ State 24
 
 State 25
 
-	definition -> T identifier . '(' m_fun_args ')' '{' actions '}'    (rule 84)
+	definition -> T identifier . '(' m_fun_params ')' '{' actions '}'    (rule 84)
 
 	'('            shift, and enter state 66
 
@@ -1575,7 +1575,7 @@ State 65
 
 State 66
 
-	definition -> T identifier '(' . m_fun_args ')' '{' actions '}'    (rule 84)
+	definition -> T identifier '(' . m_fun_params ')' '{' actions '}'    (rule 84)
 
 	atom           shift, and enter state 7
 	bool           shift, and enter state 8
@@ -1592,8 +1592,8 @@ State 66
 
 	T0             goto state 3
 	T              goto state 75
-	fun_args       goto state 76
-	m_fun_args     goto state 77
+	fun_params     goto state 76
+	m_fun_params   goto state 77
 
 State 67
 
@@ -1749,7 +1749,7 @@ State 74
 State 75
 
 	T -> T . '|' T0                                     (rule 24)
-	fun_args -> T . identifier optionalByRef            (rule 81)
+	fun_params -> T . identifier optionalByRef          (rule 81)
 
 	'|'            shift, and enter state 24
 	identifier     shift, and enter state 115
@@ -1757,8 +1757,8 @@ State 75
 
 State 76
 
-	fun_args -> fun_args . ',' fun_args                 (rule 80)
-	m_fun_args -> fun_args .                            (rule 82)
+	fun_params -> fun_params . ',' fun_params           (rule 80)
+	m_fun_params -> fun_params .                        (rule 82)
 
 	')'            reduce using rule 82
 	','            shift, and enter state 114
@@ -1766,7 +1766,7 @@ State 76
 
 State 77
 
-	definition -> T identifier '(' m_fun_args . ')' '{' actions '}'    (rule 84)
+	definition -> T identifier '(' m_fun_params . ')' '{' actions '}'    (rule 84)
 
 	')'            shift, and enter state 113
 
@@ -2708,14 +2708,14 @@ State 112
 
 State 113
 
-	definition -> T identifier '(' m_fun_args ')' . '{' actions '}'    (rule 84)
+	definition -> T identifier '(' m_fun_params ')' . '{' actions '}'    (rule 84)
 
 	'{'            shift, and enter state 122
 
 
 State 114
 
-	fun_args -> fun_args ',' . fun_args                 (rule 80)
+	fun_params -> fun_params ',' . fun_params           (rule 80)
 
 	atom           shift, and enter state 7
 	bool           shift, and enter state 8
@@ -2731,11 +2731,11 @@ State 114
 
 	T0             goto state 3
 	T              goto state 75
-	fun_args       goto state 121
+	fun_params     goto state 121
 
 State 115
 
-	fun_args -> T identifier . optionalByRef            (rule 81)
+	fun_params -> T identifier . optionalByRef          (rule 81)
 
 	')'            reduce using rule 52
 	','            reduce using rule 52
@@ -2767,7 +2767,7 @@ State 118
 
 State 119
 
-	fun_args -> T identifier optionalByRef .            (rule 81)
+	fun_params -> T identifier optionalByRef .          (rule 81)
 
 	')'            reduce using rule 81
 	','            reduce using rule 81
@@ -2782,8 +2782,8 @@ State 120
 
 State 121
 
-	fun_args -> fun_args . ',' fun_args                 (rule 80)
-	fun_args -> fun_args ',' fun_args .                 (rule 80)
+	fun_params -> fun_params . ',' fun_params           (rule 80)
+	fun_params -> fun_params ',' fun_params .           (rule 80)
 
 	')'            reduce using rule 80
 	','            reduce using rule 80
@@ -2791,7 +2791,7 @@ State 121
 
 State 122
 
-	definition -> T identifier '(' m_fun_args ')' '{' . actions '}'    (rule 84)
+	definition -> T identifier '(' m_fun_params ')' '{' . actions '}'    (rule 84)
 
 	charlit        shift, and enter state 28
 	stringlit      shift, and enter state 29
@@ -3013,7 +3013,7 @@ State 135
 
 State 136
 
-	definition -> T identifier '(' m_fun_args ')' '{' actions . '}'    (rule 84)
+	definition -> T identifier '(' m_fun_params ')' '{' actions . '}'    (rule 84)
 
 	'}'            shift, and enter state 147
 
@@ -3208,7 +3208,7 @@ State 146
 
 State 147
 
-	definition -> T identifier '(' m_fun_args ')' '{' actions '}' .    (rule 84)
+	definition -> T identifier '(' m_fun_params ')' '{' actions '}' .    (rule 84)
 
 	atom           reduce using rule 84
 	bool           reduce using rule 84

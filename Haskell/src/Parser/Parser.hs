@@ -340,7 +340,7 @@ happyExpList = Happy_Data_Array.listArray (0,516) ([0,61440,159,2050,0,0,0,32,0,
 {-# NOINLINE happyExpListPerState #-}
 happyExpListPerState st =
     token_strs_expected
-  where token_strs = ["error","%dummy","%start_parse","ixs","lvaluable","args","records","mRecords","T0","T","loop_a0","loop_a","loop_as","pattern","patterns","a0","as","actions","optionalByRef","e","fun_args","m_fun_args","definition","definitions","charlit","stringlit","boollit","number","atom","bool","int","float","char","string","unit","void","vector","'['","']'","'{'","'}'","'('","')'","','","':'","'=>'","':='","match","with","type","';'","for","while","continue","break","new","by","reference","'|'","identifier","'.'","EOF","'+'","'-'","'*'","'/'","'^'","'%'","'<'","'>'","'!='","'=='","'>='","'<='","'||'","'&&'","'~'","'&'","return","%eof"]
+  where token_strs = ["error","%dummy","%start_parse","ixs","lvaluable","args","records","mRecords","T0","T","loop_a0","loop_a","loop_as","pattern","patterns","a0","as","actions","optionalByRef","e","fun_params","m_fun_params","definition","definitions","charlit","stringlit","boollit","number","atom","bool","int","float","char","string","unit","void","vector","'['","']'","'{'","'}'","'('","')'","','","':'","'=>'","':='","match","with","type","';'","for","while","continue","break","new","by","reference","'|'","identifier","'.'","EOF","'+'","'-'","'*'","'/'","'^'","'%'","'<'","'>'","'!='","'=='","'>='","'<='","'||'","'&&'","'~'","'&'","return","%eof"]
         bit_start = st Prelude.* 80
         bit_end = (st Prelude.+ 1) Prelude.* 80
         read_bit = readArrayBit happyExpList

@@ -19,6 +19,7 @@
 {-# LANGUAGE TemplateHaskell          #-}
 {-# LANGUAGE KindSignatures           #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE ImportQualifiedPost      #-}
 module AST where 
 
 
@@ -29,6 +30,7 @@ import Data.List.NonEmpty
 import Prelude.Singletons
 import Data.Singletons.TH 
 import Data.List.Singletons 
+import Data.Text qualified as T
 
 $(singletons [d|
   data ActionCtx 
@@ -41,6 +43,7 @@ $(singletons [d|
     | PORef
 
   |])
+
 
 data Pattern (ctx :: Type) (a :: PTypes) where 
   PaZ      :: PaZX ctx   -> Int    -> Pattern ctx PZ 
@@ -108,6 +111,7 @@ data A (ctx :: Type) (actx :: [ActionCtx]) (a :: PTypes) where
     -> A ctx '[ReturnCtx] a
   ABreak    :: ABreakX ctx -> A ctx '[LoopCtx] PAUnit 
   AContinue :: AContinueX ctx ->  A ctx '[LoopCtx] PAUnit 
+  ABottom   :: ABotX ctx -> A ctx actx a 
 
 
 data AECtx (ctx :: Type) (a :: PTypes) where 
@@ -116,7 +120,8 @@ data AECtx (ctx :: Type) (a :: PTypes) where
 data AEF (ctx :: Type) where 
   MkAEF :: forall actx a ctx. (SingI actx, SingI a) => A ctx actx a -> AEF ctx
 
-
+type family FunDefX  (ctx :: Type) (retT :: PTypes) :: Type 
+type family TypeDefX (ctx :: Type) :: Type 
 type family AssX       (ctx :: Type) (a :: PTypes) :: Type 
 type family DeclX      (ctx :: Type) (a :: PTypes) :: Type 
 type family ForX       (ctx :: Type) (actx :: [ActionCtx]) (a :: PTypes) (b :: PTypes) :: Type 
@@ -127,6 +132,30 @@ type family ASX        (ctx :: Type) (a :: PTypes) :: Type
 type family AReturnX   (ctx :: Type) (a :: PTypes) :: Type 
 type family ABreakX    (ctx :: Type) :: Type 
 type family AContinueX (ctx :: Type) :: Type 
+type family ABotX      (ctx :: Type) :: Type 
+
+
+data FunctionArg (ctx :: Type) where 
+  MkFunctionArg :: SingI a 
+    => FunArgX ctx a 
+    -> Text -> PassOption -> FunctionArg ctx 
+
+type family FunArgX (ctx :: Type) (a :: PTypes) :: Type 
+
+data Definition (ctx :: Type) where 
+  FunctionDef :: 
+    (SingI retT)
+    => FunDefX ctx retT 
+    -> Text 
+    -> [FunctionArg ctx]
+    -> A ctx '[ReturnCtx] retT 
+    -> Definition ctx
+  TypeDef :: TypeDefX ctx 
+    -> Text 
+    -> Types 
+    -> Definition ctx 
+
+
 
 -- | Expression AST indexed by a context.
 data  E  (ctx :: Type) (a :: PTypes) where
@@ -164,7 +193,7 @@ data  E  (ctx :: Type) (a :: PTypes) where
   EABlock  :: forall a actx ctx. 
     (SingI a, Elem PureCtx actx ~ True, NotElem ReturnCtx actx ~ True) 
     => EABlockX ctx a -> A ctx actx a -> E ctx a 
-
+  EBottom :: EBotX ctx -> E ctx PBottom 
 
 type family EPlusZX   (ctx :: Type) :: Type 
 type family EPlusFX   (ctx :: Type) :: Type 
@@ -198,5 +227,25 @@ type family EAndX     (ctx :: Type) :: Type
 type family EOrX      (ctx :: Type) :: Type 
 type family ENegX     (ctx :: Type) :: Type 
 type family EABlockX  (ctx :: Type) (a :: PTypes) :: Type 
+type family EBotX     (ctx :: Type) :: Type 
 
 
+instance Show (Pattern ctx a) where 
+  show (PaId _ var opt) = case opt of 
+    POValue -> T.unpack var 
+    PORef   -> T.unpack var <> " by reference"
+  show _ = undefined 
+
+instance Show (LValuable ctx a) where 
+  show (LvArr _ x e) = show x <> "[" <> show e <> "]"
+  show _ = undefined 
+
+instance Show (A ctx actx a) where 
+
+
+-- https://stackoverflow.com/questions/27471937/showsprec-and-operator-precedences
+instance Show (E ctx a) where
+  showsPrec p = \case 
+    -- Infix Left with precedence 4
+    EPlusZ _ a b -> showParen (p > 4) $ showsPrec 4 a . showString " + " . showsPrec 5 b
+    _ -> undefined

@@ -33,6 +33,7 @@ library
       Parser.Parser
       Parser.Runner
       Parser.ScopeCheck
+      TypeCheck
       TypedMap
       Types
   other-modules:
