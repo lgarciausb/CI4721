@@ -117,11 +117,11 @@ pattern a :|: b   = TCon "|"      [a,b]
 pattern ZArray a  = TCon "Array" [a]
 pattern ZRef a    = TCon "Ref" [a]
 pattern Record as = TCon "Record" as 
-pattern a :~.: b  = TCon "~." [a,b]
+pattern a :~.: b  = TCon "~." [TString a,b]
 pattern TString a = TCon a []
 pattern AUnit     = TCon "AUnit" []
 pattern Bottom    = TCon "Bottom" []
-
+pattern ZId a     = TCon a []
 
 
 infixr 0 :~>
@@ -141,10 +141,11 @@ type a :~|: b   = PTCon "|"      '[a,b]
 type PZArray a  = PTCon "Array" '[a]
 type PZRef a    = PTCon "Ref"   '[a]
 type PRecord as = PTCon "Record" as
-type a :~~.: b  = PTCon "~." [a,b]
+type a :~~.: b  = PTCon "~." [PTString a,b]
 type PTString a = PTCon a '[]
 type PAUnit     = PTCon "AUnit" '[]
 type PBottom    = PTCon "Bottom" '[]
+type PId a      = PTCon a '[]
 
 type family IsRecord (a :: PTypes) :: Bool where 
   IsRecord (PTCon "Record" _) = True 

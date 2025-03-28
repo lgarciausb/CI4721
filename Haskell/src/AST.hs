@@ -111,7 +111,7 @@ data A (ctx :: Type) (actx :: [ActionCtx]) (a :: PTypes) where
     -> A ctx '[ReturnCtx] a
   ABreak    :: ABreakX ctx -> A ctx '[LoopCtx] PAUnit 
   AContinue :: AContinueX ctx ->  A ctx '[LoopCtx] PAUnit 
-  ABottom   :: ABotX ctx -> A ctx actx a 
+  ABottom   :: forall actx a ctx. ABotX ctx -> A ctx actx a 
 
 
 data AECtx (ctx :: Type) (a :: PTypes) where 
@@ -136,7 +136,7 @@ type family ABotX      (ctx :: Type) :: Type
 
 
 data FunctionArg (ctx :: Type) where 
-  MkFunctionArg :: SingI a 
+  MkFunctionArg :: forall a ctx. SingI a 
     => FunArgX ctx a 
     -> Text -> PassOption -> FunctionArg ctx 
 
@@ -150,7 +150,7 @@ data Definition (ctx :: Type) where
     -> [FunctionArg ctx]
     -> A ctx '[ReturnCtx] retT 
     -> Definition ctx
-  TypeDef :: TypeDefX ctx 
+  TypeDef :: TypeDefX ctx
     -> Text 
     -> Types 
     -> Definition ctx 
