@@ -95,8 +95,11 @@ declareMF = declareFL
 data Any k (f :: k -> Type)   where
   MkAny :: forall {k} (a :: k) f.  (SingI a, SingKind k, Show (Demote k)) => MVar (f a) -> Any k f 
 
-newtype TypeRepMap k f = TypeRepMap (Map Symbol (Any k f))
+data Any' k (f :: k -> Type)   where
+  MkAny' :: forall {k} (a :: k) f.  (SingI a, SingKind k, Show (Demote k)) => f a -> Any' k f 
 
+
+newtype TypeRepMap k f = TypeRepMap (Map Symbol (Any k f))
 
 empty :: TypeRepMap k f
 empty = TypeRepMap M.empty 
@@ -161,6 +164,15 @@ yield var (TypeRepMap d) = case M.lookup var d of
     Just Refl -> liftIO (tryReadMVar mv) >>= \case 
       Nothing -> pure . Left $ VariableNotInitialized var 
       Just c  -> pure . pure $ c
+
+yield' ::  forall {k}  (f :: k -> Type) m.  
+  ( MonadIO m
+  , SingKind k
+  ) => Symbol -> TypeRepMap k f -> m (Either GammaErrors (Any' k f))
+yield' var (TypeRepMap d) = case M.lookup var d of 
+  Nothing -> pure . Left $ VariableNotDefined var
+  Just (MkAny  mv) -> Right . MkAny' <$> liftIO (readMVar mv)
+
 
 
 instance forall k  (a :: k) (f :: k -> Type). 

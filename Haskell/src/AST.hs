@@ -63,15 +63,36 @@ type family PaCharX   (ctx :: Type) :: Type
 type family PaStringX (ctx :: Type) :: Type 
 type family PaIdX     (ctx :: Type) (a :: PTypes) :: Type 
 
+data Accessors (ctx :: Type) (a :: PTypes)  where 
+  AccSimple :: forall a b ctx. 
+    (SingI a, SingI b) => AccSimpleX ctx a -> Text -> Accessors ctx (a :~> b)
+  AccDot :: forall a b c ctx.
+    (SingI a, SingI b, SingI c) 
+    => AccDotX ctx a b c -> Accessors ctx (a :~> b) -> Accessors ctx (b :~> c)  -> Accessors ctx (a :~> c)
+  AccArr  :: forall a b ctx.
+    (SingI a, SingI b)
+    => AccArrX ctx a b 
+    -> Accessors ctx (a :~> PZArray b) -> E ctx PZ -> Accessors ctx (a :~> b)
+
+type family AccSimpleX (ctx :: Type) (a :: PTypes) :: Type 
+type family AccDotX (ctx :: Type) (a :: PTypes) (b :: PTypes) (c :: PTypes) :: Type 
+type family AccArrX (ctx :: Type) (a :: PTypes) (b :: PTypes) :: Type
 
 data LValuable (ctx :: Type) (a :: PTypes) where 
-  LVId  :: SingI a => LvIdX ctx a ->  Text    -> LValuable ctx a
-  LvArr :: (SingI a, SingI b) => LvArrX ctx a b -> LValuable ctx a -> E ctx PZ ->  LValuable ctx b
-  LvDot :: (SingI a, SingI b) => LvDotX ctx a b -> LValuable ctx a -> Text -> LValuable ctx b
+  LVId  :: forall a ctx. SingI a => LvIdX ctx a ->  Text    -> LValuable ctx a
+  LVIdWithAcc :: forall a b ctx. 
+    (SingI a, SingI b) 
+    => LvIdWithAccX ctx a b 
+    -> Text -> Accessors ctx (a :~> b) -> LValuable ctx b
+  -- LvArr :: (SingI a) => LvArrX ctx a -> LValuable ctx (PZArray a) -> E ctx PZ ->  LValuable ctx a
+  -- LvDot :: forall a b ctx. 
+  --   (SingI a, SingI b) => LvDotX ctx a b -> LValuable ctx a -> Text -> LValuable ctx b
 
-type family LvIdX  (ctx :: Type) (a :: PTypes) :: Type 
-type family LvArrX (ctx :: Type) (a :: PTypes) (b :: PTypes) :: Type 
-type family LvDotX (ctx :: Type) (a :: PTypes) (b :: PTypes) :: Type
+type family LvIdX  (ctx :: Type) (a :: PTypes) :: Type
+type family LvIdWithAccX (ctx :: Type) (a :: PTypes) (b :: PTypes) :: Type 
+
+-- type family LvArrX (ctx :: Type) (a :: PTypes) :: Type 
+-- type family LvDotX (ctx :: Type) (a :: PTypes) (b :: PTypes) :: Type
 
 
 
@@ -194,6 +215,7 @@ data  E  (ctx :: Type) (a :: PTypes) where
     (SingI a, Elem PureCtx actx ~ True, NotElem ReturnCtx actx ~ True) 
     => EABlockX ctx a -> A ctx actx a -> E ctx a 
   EBottom :: EBotX ctx -> E ctx PBottom 
+  EError  :: forall a ctx. EErrorX ctx a -> E ctx a
 
 type family EPlusZX   (ctx :: Type) :: Type 
 type family EPlusFX   (ctx :: Type) :: Type 
@@ -228,7 +250,7 @@ type family EOrX      (ctx :: Type) :: Type
 type family ENegX     (ctx :: Type) :: Type 
 type family EABlockX  (ctx :: Type) (a :: PTypes) :: Type 
 type family EBotX     (ctx :: Type) :: Type 
-
+type family EErrorX   (cyx :: Type) (a :: PTypes) :: Type
 
 instance Show (Pattern ctx a) where 
   show (PaId _ var opt) = case opt of 
@@ -237,9 +259,10 @@ instance Show (Pattern ctx a) where
   show _ = undefined 
 
 instance Show (LValuable ctx a) where 
-  show (LvArr _ x e) = show x <> "[" <> show e <> "]"
   show _ = undefined 
 
+instance Show (Accessors ctx a) where 
+  show _ = undefined 
 instance Show (A ctx actx a) where 
 
 
