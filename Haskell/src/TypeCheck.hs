@@ -329,8 +329,8 @@ typeCheckAction (L.Assign lv e) = do
 typeCheckAction (L.For pa e las pos) = do 
   env <- ask
   MkEE @e' e' <- withExpectedType Nothing $ typeCheckExpression e 
-  MkPatternE @pe pe <- snd <$> typeCheckPattern (demote @e') pa
-  MkAEF las' <- snd <$> typeCheckLoopActions pos las
+  (env',MkPatternE @pe pe) <- typeCheckPattern (demote @e') pa
+  MkAEF las' <- fmap snd $ local (const env') $ typeCheckLoopActions pos las
   case decideEquality' @e' @pe of 
     Just Refl -> pure (env, MkAEF $ ForLoop pos pe e' las') 
     Nothing -> pure (env, MkAEF $ ABottom @'[] @PAUnit pos)
@@ -739,11 +739,12 @@ typeCheckExpression (L.EBool t pos) = ask >>= \env -> case tceExpectedType env o
     withSingI set $ 
       pure . MkEE $ EError @set pos
   where 
-    f "true" = pure . MkEE $ EZBool pos True 
+    f "rue" = pure . MkEE $ EZBool pos True 
     f "false" = pure . MkEE $ EZBool pos False
-    f _ = do 
+    f b = do 
       appendToLog 
         $ "Syntax error at " <> T.show pos <> ". Bools can only be either true or false."
+        <> " But instead got: " <> b
       pure . MkEE $ EError @PZBool pos
 typeCheckExpression (L.Times l r pos) 
   = typeCheckBinOp
@@ -820,6 +821,17 @@ typeCheckExpression (L.FApp var xs pos) = do
 typeCheckExpression (L.New (L.PId var _) xs pos) = do 
   liftIO $ putStrLn $ T.unpack var
   typeCheckExpression  (L.FApp  ("new<" <> var <> ">") xs pos )
+typeCheckExpression (L.New _ _ pos) = do 
+  appendToLog 
+    $  "Type error at "
+    <> T.show pos 
+    <> ". Only user defined types have constructors."
+  env <- ask 
+  case tceExpectedType env of 
+    Just (toSing -> SomeSing @_ @et et) 
+      -> withSingI et 
+      $  pure . MkEE $ EError @et pos 
+    Nothing -> pure . MkEE $ EError @PBottom pos 
   
   
 typeCheckExpression _ = undefined
