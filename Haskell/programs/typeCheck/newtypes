@@ -1,0 +1,10 @@
+type A := {a : int}
+type B := {a : int, b : float}
+type C := {a : A, b : B}
+int main(){
+  A x  := new A(1);
+  B y  := new B(10,5.4);
+  C z  := new C(x,y);
+  C z0 := new C(new A(1), new B(1,1.91));
+  return 6;
+}

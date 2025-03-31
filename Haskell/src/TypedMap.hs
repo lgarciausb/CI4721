@@ -161,10 +161,13 @@ insertFresh  :: forall {k} (a :: k) (f :: k -> Type) m.
   , Show (Demote k)
   , SingKind k
   ) => Symbol -> f a -> TypeRepMap k f -> m (TypeRepMap k f)
-insertFresh var e (TypeRepMap d) 
-  = declareFresh @a var (TypeRepMap d) 
-  >>= insert var e
-  >>= (\(Right a) -> pure a)
+insertFresh var e (TypeRepMap d) = do 
+  mv <- liftIO $ newMVar e
+  pure . TypeRepMap $ M.insert var (MkAny mv) d
+
+  -- = declareFresh @a var (TypeRepMap d) 
+  -- >>= insert var e
+  -- >>= (\(Right a) -> pure a)
 
 
 

@@ -158,6 +158,7 @@ matches b@(SSymbol ) =  case sing @a of
 
 instance Show Types where 
   showsPrec p = \case 
+    ZId a -> showString $ Text.unpack a
     TCon a [] -> showString $ Text.unpack a
     a :~.: b -> shows a . showString " : " . shows b
     Record as -> showString "{" . showString (intercalate "," $ show <$> as) . showString "}" 
@@ -167,6 +168,7 @@ instance Show Types where
       -> showString (Text.unpack a) . showString "<" 
       . (foldr (\arg acc -> shows arg . showString ", " . acc) (shows x) xs) 
       . showString ">"
+    
 
 
 

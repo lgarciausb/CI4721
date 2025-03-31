@@ -129,15 +129,17 @@ typeCheckFunArg :: forall m.
   , MonadWriter ErrLogs m
   , MonadIO m 
   ) 
-  => L.FunArg AlexPosn -> m (FunctionArg TCCtx)
+  => L.FunArg AlexPosn -> m (TypeCheckEnv, FunctionArg TCCtx)
 typeCheckFunArg (L.FunArg t var mode pos) = do 
+  env <- ask 
+  let d = tceDict env
   t' <- typeCheckTypes t
-  case toSing t' of 
-    SomeSing @_ @st st 
-      -> withSingI st 
-      $ pure 
-      $ MkFunctionArg @st @TCCtx pos var 
-      $ maybe POValue (const PORef) mode
+  SomeSing @_ @st st <- pure $ toSing t' 
+  withSingI st $ do 
+    d' <- insertFresh var st d
+
+    pure 
+      (env{tceDict = d'},MkFunctionArg @st @TCCtx pos var $ maybe POValue (const PORef) mode)
 
 generateAccessorFunctions :: MonadReader Types m =>  Types -> m (Map Text Types )
 generateAccessorFunctions (a :|: b) 
@@ -157,6 +159,20 @@ genAccessors (a :~.: b) = ask >>= \t -> pure $ M.singleton a [t :-> b]
 genAccessors (Record ts) = M.unionsWith mappend <$> traverse genAccessors ts
 genAccessors _ = pure $ M.empty
 
+genNewFunctions ::   ( MonadReader TypeCheckEnv m 
+  , MonadWriter ErrLogs m
+  , MonadIO m 
+  ) 
+  => Text -> Types -> m TypeCheckEnv 
+genNewFunctions fName (Record (xs)) = do 
+  env <- ask 
+  let xs' = fmap (\(_ :~.: t') -> t') xs
+  let reT = ZId fName 
+  let t' = foldr (\next acc -> next :-> acc) reT xs'
+  SomeSing  snewF <- pure $ toSing t' 
+  d <- withSingI snewF $ insertFresh ("new<" <> fName <> ">") snewF $ tceDict env
+  pure $ env{tceDict=d} 
+genNewFunctions _ _ = error "impossible case"
 
 generateFunType :: forall m. 
   ( MonadReader TypeCheckEnv m 
@@ -184,22 +200,29 @@ typeCheckDef (L.TypeDef tname at pos) = do
     SomeSing  st <- pure $ toSing t' 
     md <- withSingI st $ TypedMap.insert n st $ tceDict env' 
     case md of 
-      Right dict' -> pure env{tceDict = dict'}
+      Right dict' -> pure env'{tceDict = dict'}
       Left _ -> error "impossible case"
   -- update the accessors. 
   let env2 = env1{tceAccessors = M.unionsWith mappend [tceAccessors env1, genAccessors t `runReader` ZId tname] }
-  pure (env2, TypeDef pos tname t)
+  -- update new functions 
+  env3 <- local (const env2) $ genNewFunctions tname  t
+  liftIO $ putStrLn $ T.unpack tname
+  liftIO $ print $ M.toList $ tceTypesDict env3 
+  pure (env3, TypeDef pos tname t)
 typeCheckDef (L.FunctionDef reT fname args as pos) = do
   env     <- ask
   !reT'    <- typeCheckTypes reT 
   !funType <- generateFunType reT' args 
-  !funArgs <- traverse typeCheckFunArg args 
+  (newEnv,funArgs) <- (\b ta f -> foldlM f b ta) (env,[])  args $ \(e,acc) arg -> do 
+    (newEnv,targ) <- local (const e) $ typeCheckFunArg arg 
+    pure (newEnv,acc <> [targ])
   SomeSing @_ @sFunType sFunType <- pure $ toSing funType 
   SomeSing @_ @sRet sRet <- pure $ toSing reT'
 
 
   withSingI sFunType 
     $ withSingI sRet 
+    $ local (const newEnv)
     $ do 
       -- On error return the bottom of actions 
       let iError = withSingI sRet $ FunctionDef @sRet pos fname funArgs $ ABottom @'[ReturnCtx] @sRet pos 
@@ -733,6 +756,18 @@ typeCheckExpression (L.Times l r pos)
     ETimesF 
     ETimesZF
     ETimesFZ
+typeCheckExpression (L.Minus l r pos) 
+  = typeCheckBinOp
+    @PZ
+    @PF
+    @PF
+    @PF 
+    l r pos 
+    EMinusZ
+    EMinusF 
+    EMinusZF
+    EMinusFZ
+
 typeCheckExpression (L.ELValuable (L.PLId var pos)) = do 
   env <- ask 
   mv <- yield' var $ tceDict env 
@@ -782,9 +817,11 @@ typeCheckExpression (L.FApp var xs pos) = do
         Just (toSing -> SomeSing @_ @et et) -> withSingI et $ pure . MkEE $ EError @et pos 
         Nothing ->  pure . MkEE $ EError @PBottom pos 
 
-
-
-
+typeCheckExpression (L.New (L.PId var _) xs pos) = do 
+  liftIO $ putStrLn $ T.unpack var
+  typeCheckExpression  (L.FApp  ("new<" <> var <> ">") xs pos )
+  
+  
 typeCheckExpression _ = undefined
 
 
@@ -805,6 +842,12 @@ type instance ETimesZX TCCtx = AlexPosn
 type instance ETimesFX TCCtx = AlexPosn 
 type instance ETimesZFX TCCtx = AlexPosn 
 type instance ETimesFZX TCCtx = AlexPosn 
+type instance EMinusZX TCCtx = AlexPosn 
+type instance EMinusFX TCCtx = AlexPosn 
+type instance EMinusZFX TCCtx = AlexPosn 
+type instance EMinusFZX TCCtx = AlexPosn 
+
+
 
 typeCheckFAppS :: forall a b m. 
   ( MonadReader TypeCheckEnv m 
@@ -821,6 +864,7 @@ typeCheckFAppS f xs = (\b ta op -> foldlM op b ta) (MkEE f) xs $ \(MkEE @uf uf) 
   case sing @uf of 
     STCon (matches @"->" -> Just Refl) (SCons @_ @sa sa (SCons @_ @sb sb SNil))
       -> withSingI sa $ withSingI sb $ do 
+        liftIO $ print $ demote @uf
         MkEE @targ targ <- withExpectedType (Just $ fromSing sa) $ typeCheckExpression arg
         case decideEquality' @targ @sa of 
           Just Refl -> pure . MkEE $ EApp pos uf targ
@@ -830,7 +874,7 @@ typeCheckFAppS f xs = (\b ta op -> foldlM op b ta) (MkEE f) xs $ \(MkEE @uf uf) 
               <> T.show pos 
               <> ". Expected type: "
               <> T.show (demote @sa)
-              <> ", but instead got: "
+              <> "..., but instead got: "
               <> T.show (demote @targ)
             pure . MkEE $ EError @sb pos 
     _ -> do  

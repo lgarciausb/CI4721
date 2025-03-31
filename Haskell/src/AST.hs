@@ -213,6 +213,9 @@ data  E  (ctx :: Type) (a :: PTypes) where
   EMinusZ  :: EMinusZX ctx -> E ctx PZ -> E ctx PZ -> E ctx PZ 
   EMinusF  :: EMinusFX  ctx -> E ctx PF -> E ctx PF -> E ctx PF
   EUMinusZ :: EUMinusZX ctx -> E ctx PZ -> E ctx PZ 
+  EMinusZF  :: EMinusZFX ctx -> E ctx PZ -> E ctx PF -> E ctx PF 
+  EMinusFZ  :: EMinusFZX ctx -> E ctx PF -> E ctx PZ -> E ctx PF 
+
   EUMinusF :: EUMinusFX ctx -> E ctx PF -> E ctx PF
   ELTZ     :: ELTZX ctx -> E ctx PZ -> E ctx PZ -> E ctx PZBool  
   ELTF     :: ELTFX  ctx -> E ctx PF -> E ctx PF -> E ctx PZBool 
@@ -279,6 +282,8 @@ type family EPlusFZX  (ctx :: Type) :: Type
 type family EZBoolX   (ctx :: Type) :: Type
 type family ETimesZFX  (ctx :: Type) :: Type 
 type family ETimesFZX  (ctx :: Type) :: Type 
+type family EMinusZFX  (ctx :: Type) :: Type 
+type family EMinusFZX  (ctx :: Type) :: Type 
 
 
 
