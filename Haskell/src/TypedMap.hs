@@ -150,6 +150,21 @@ insert var e (TypeRepMap d) = case M.lookup var d of
     Nothing -> pure . Left $ TypeMismatch var (ExpectedType . T.show $ demote @a') (ActualType . T.show $ demote @a )
     Just Refl -> const (Right . TypeRepMap $ d) <$> liftIO (modifyMVar_ mv $ pure . (const e) ) 
 
+insertFresh  :: forall {k} (a :: k) (f :: k -> Type) m.  
+  ( SingI a
+  , MonadIO m
+  , SDecide k
+  , Show (Demote k)
+  , SingKind k
+  ) => Symbol -> f a -> TypeRepMap k f -> m (TypeRepMap k f)
+insertFresh var e (TypeRepMap d) 
+  = declareFresh @a var (TypeRepMap d) 
+  >>= insert var e
+  >>= (\(Right a) -> pure a)
+
+
+
+
 yield ::  forall {k} (a :: k) (f :: k -> Type) m.  
   ( SingI a
   , MonadIO m

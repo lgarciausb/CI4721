@@ -44,6 +44,14 @@ $(singletons [d|
 
   |])
 
+defineActionCtx :: [ActionCtx] -> [ActionCtx] -> [ActionCtx]
+defineActionCtx [ReturnCtx] _ = [ReturnCtx]
+defineActionCtx _ [ReturnCtx] = [ReturnCtx]
+defineActionCtx [PureCtx] a = a
+defineActionCtx a [PureCtx] = a 
+defineActionCtx _ b = b
+
+
 
 data Pattern (ctx :: Type) (a :: PTypes) where 
   PaZ      :: PaZX ctx   -> Int    -> Pattern ctx PZ 
@@ -54,7 +62,8 @@ data Pattern (ctx :: Type) (a :: PTypes) where
   PaId     :: SingI a => PaIdX ctx a -> Text   -> PassOption -> Pattern ctx a 
   PaRecord :: forall a ctx. 
     (SingI a, IsRecord a ~ True)
-    => Pattern ctx a -> Demote (KindOf a) -> Pattern ctx a
+    => PaRecordX ctx a -> Demote (KindOf a) -> Pattern ctx a
+  PaErr    :: SingI a => PaErrX ctx a -> Pattern ctx a  
 
 type family PaZX      (ctx :: Type) :: Type 
 type family PaFX      (ctx :: Type) :: Type 
@@ -62,6 +71,8 @@ type family PaBX      (ctx :: Type) :: Type
 type family PaCharX   (ctx :: Type) :: Type 
 type family PaStringX (ctx :: Type) :: Type 
 type family PaIdX     (ctx :: Type) (a :: PTypes) :: Type 
+type family PaErrX    (ctx :: Type) (a :: PTypes) :: Type 
+type family PaRecordX (ctx :: Type) (a :: PTypes) :: Type
 
 data Accessors (ctx :: Type) (a :: PTypes)  where 
   AccSimple :: forall a b ctx. 
@@ -121,7 +132,7 @@ data A (ctx :: Type) (actx :: [ActionCtx]) (a :: PTypes) where
     -> NonEmpty (Pattern ctx a, AECtx ctx b)
     -> A ctx actx b
   -- Be wary, we do not enforce that actx = U actX (AEF) U actx(AECtx)
-  AS :: (SingI a, SingI actx)
+  AS :: forall actx a ctx. (SingI a, SingI actx)
     => ASX ctx a 
     -> AECtx ctx a -- ^ Last instruction
     -> [AEF ctx]   -- ^ Actions in reversed order 
@@ -133,7 +144,7 @@ data A (ctx :: Type) (actx :: [ActionCtx]) (a :: PTypes) where
   ABreak    :: ABreakX ctx -> A ctx '[LoopCtx] PAUnit 
   AContinue :: AContinueX ctx ->  A ctx '[LoopCtx] PAUnit 
   ABottom   :: forall actx a ctx. ABotX ctx -> A ctx actx a 
-
+  Skip :: forall a ctx. SingI a => SkipX ctx a -> A ctx '[] a
 
 data AECtx (ctx :: Type) (a :: PTypes) where 
   MkAECtx :: forall actx ctx a. SingI actx => A ctx actx a -> AECtx ctx a
@@ -154,7 +165,7 @@ type family AReturnX   (ctx :: Type) (a :: PTypes) :: Type
 type family ABreakX    (ctx :: Type) :: Type 
 type family AContinueX (ctx :: Type) :: Type 
 type family ABotX      (ctx :: Type) :: Type 
-
+type family SkipX      (ctx :: Type) (a :: PTypes) :: Type
 
 data FunctionArg (ctx :: Type) where 
   MkFunctionArg :: forall a ctx. SingI a 
@@ -182,12 +193,19 @@ data Definition (ctx :: Type) where
 data  E  (ctx :: Type) (a :: PTypes) where
   EZ       :: EZX ctx -> Int   -> E ctx PZ
   EF       :: EFX ctx -> Float -> E ctx PF 
-  EZString :: EZString ctx -> Text -> E ctx PZString
-  EZChar   :: EZChar ctx -> Char -> E ctx PZChar 
+  EZString :: EZStringX ctx -> Text -> E ctx PZString
+  EZChar   :: EZCharX ctx -> Char -> E ctx PZChar 
+  EZBool   :: EZBoolX ctx -> Bool -> E ctx PZBool
   EPlusZ   :: EPlusZX ctx -> E ctx PZ -> E ctx PZ -> E ctx PZ 
+  EPlusZF  :: EPlusZFX ctx -> E ctx PZ -> E ctx PF -> E ctx PF 
+  EPlusFZ  :: EPlusFZX ctx -> E ctx PF -> E ctx PZ -> E ctx PF 
   EPlusF   :: EPlusFX ctx -> E ctx PF -> E ctx PF -> E ctx PF
+
   ETimesZ  :: ETimesZX ctx -> E ctx PZ -> E ctx PZ -> E ctx PZ 
   ETimesF  :: ETimesFX  ctx -> E ctx PF -> E ctx PF -> E ctx PF
+  ETimesZF  :: ETimesZFX ctx -> E ctx PZ -> E ctx PF -> E ctx PF 
+  ETimesFZ  :: ETimesFZX ctx -> E ctx PF -> E ctx PZ -> E ctx PF 
+
   EDivF    :: EDivFX  ctx -> E ctx PF -> E ctx PF -> E ctx PF
   EPowerZ  :: EPowerZX ctx -> E ctx PZ -> E ctx PZ -> E ctx PZ 
   EPowerF  :: EPowerFX  ctx -> E ctx PF -> E ctx PF -> E ctx PF
@@ -221,8 +239,8 @@ type family EPlusZX   (ctx :: Type) :: Type
 type family EPlusFX   (ctx :: Type) :: Type 
 type family EZX       (ctx :: Type) :: Type 
 type family EFX       (ctx :: Type) :: Type 
-type family EZString  (ctx :: Type) :: Type
-type family EZChar    (ctx :: Type) :: Type 
+type family EZStringX  (ctx :: Type) :: Type
+type family EZCharX    (ctx :: Type) :: Type 
 type family ETimesZX  (ctx :: Type) :: Type 
 type family ETimesFX  (ctx :: Type) :: Type 
 type family EDivFX    (ctx :: Type) :: Type 
@@ -250,7 +268,14 @@ type family EOrX      (ctx :: Type) :: Type
 type family ENegX     (ctx :: Type) :: Type 
 type family EABlockX  (ctx :: Type) (a :: PTypes) :: Type 
 type family EBotX     (ctx :: Type) :: Type 
-type family EErrorX   (cyx :: Type) (a :: PTypes) :: Type
+type family EErrorX   (ctx :: Type) (a :: PTypes) :: Type
+type family EPlusZFX  (ctx :: Type) :: Type 
+type family EPlusFZX  (ctx :: Type) :: Type 
+type family EZBoolX   (ctx :: Type) :: Type
+type family ETimesZFX  (ctx :: Type) :: Type 
+type family ETimesFZX  (ctx :: Type) :: Type 
+
+
 
 instance Show (Pattern ctx a) where 
   show (PaId _ var opt) = case opt of 

@@ -140,6 +140,12 @@ data LoopAction a
   | LAction (Action a)
   deriving (Eq,Show)
 
+getLoopActionInfo :: LoopAction a -> a
+getLoopActionInfo (Break a) = a
+getLoopActionInfo (Continue a) = a 
+getLoopActionInfo (LAction a) = getActionInfo a
+
+
 data Pattern a
   = PaNumber Text a
   | PaString Text a
@@ -158,6 +164,13 @@ data Action a
   | Return (Expression a) a
   deriving (Eq,Show)
 
+getActionInfo :: Action a -> a
+getActionInfo (For _ _ _ a) = a 
+getActionInfo (While _ _ a) = a 
+getActionInfo (Assign lv _) = getLValueInfo lv 
+getActionInfo (Declare t _ _) = getPTypesInfo t 
+getActionInfo (AExpression e) = getExpressionInfo e
+getActionInfo (Return _ a) = a
 
 data Expression a  
   = ELValuable (LValuable a)
@@ -186,7 +199,6 @@ data Expression a
   | EBool Text a
   | Match (Expression a) [(Pattern a,[Action a])] a
   | FApp Text [Expression a] a
-  | EUnit a
   deriving (Eq,Show)
 
 getExpressionInfo :: Expression a -> a
