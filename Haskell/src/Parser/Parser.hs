@@ -2207,7 +2207,7 @@ happyReduce_46 = happySpecReduce_2  16 happyReduction_46
 happyReduction_46 (HappyTerminal happy_var_2)
 	(HappyTerminal happy_var_1)
 	 =  HappyAbsSyn16
-		 (happy_var_2 |> happy_var_1 |> \(LReturn p) (LUnit p') -> Return (EUnit p') p
+		 (happy_var_2 |> happy_var_1 |> \(LReturn p) (LUnit p') -> Return (Unit p') p
 	)
 happyReduction_46 _ _  = notHappyAtAll 
 

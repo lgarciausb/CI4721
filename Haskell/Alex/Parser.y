@@ -164,7 +164,7 @@ a0 : e {AExpression $1}
    | T identifier ':=' e { $4 |> $2 |> $1 |> \ty (LIdentifier t _) e -> Declare ty t (Just e)}
    | T identifier { $2 |> $1 |> \ty (LIdentifier t _) -> Declare ty t Nothing}
    | return e {$1 |> \(LReturn p) -> Return $2 p} 
-   | return unit {$2 |> $1 |> \(LReturn p) (LUnit p') -> Return (EUnit p') p} 
+   | return unit {$2 |> $1 |> \(LReturn p) (LUnit p') -> Return (Unit p') p} 
  
 
 as :: {[Action AlexPosn]}

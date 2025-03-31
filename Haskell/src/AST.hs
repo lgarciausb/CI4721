@@ -234,7 +234,12 @@ data  E  (ctx :: Type) (a :: PTypes) where
     => EABlockX ctx a -> A ctx actx a -> E ctx a 
   EBottom :: EBotX ctx -> E ctx PBottom 
   EError  :: forall a ctx. EErrorX ctx a -> E ctx a
+  EVar :: forall a ctx. SingI a => EVarX ctx a -> Text -> E ctx a 
+  EApp :: forall a b ctx. (SingI a,SingI b) 
+    => EAppX ctx a b -> E ctx (a :~> b) -> E ctx a -> E ctx b
 
+type family EAppX (ctx :: Type) (a :: PTypes) (b :: PTypes) :: Type
+type family EVarX (ctx :: Type) (a :: PTypes) :: Type
 type family EPlusZX   (ctx :: Type) :: Type 
 type family EPlusFX   (ctx :: Type) :: Type 
 type family EZX       (ctx :: Type) :: Type 

@@ -13,6 +13,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE BangPatterns #-}
 
 module TypeCheck where 
 
@@ -49,6 +52,17 @@ data TypeCheckEnv = TCE
   , tceAccessors :: Map Text [Types]
   }
 
+iTypeCheckEnv :: TypeCheckEnv 
+iTypeCheckEnv  = TCE 
+  { tceDict = empty 
+  , tceExpectedType = Nothing 
+  , tceTypesDict = M.empty 
+  , tceAccessors = M.empty
+  }
+
+iErrLogs :: ErrLogs
+iErrLogs = []
+
 appendToLog :: MonadWriter ErrLogs m => Text -> m ()
 appendToLog = tell . pure 
 
@@ -68,7 +82,12 @@ showGammaErrors e = case e of
   VariableNotInitialized s 
     -> "Symbol not initialized: " <> s
 
+newtype TCM a = TCM 
+  { runTCM :: ReaderT TypeCheckEnv (WriterT ErrLogs IO) a }
+  deriving newtype (Functor, Applicative, Monad, MonadReader TypeCheckEnv, MonadWriter ErrLogs, MonadIO)
 
+runTCMIO :: TCM a -> IO (a,ErrLogs)
+runTCMIO tcm = runWriterT $ runReaderT (runTCM tcm) iTypeCheckEnv 
 
 
 typeCheckTypes :: forall m. 
@@ -172,11 +191,13 @@ typeCheckDef (L.TypeDef tname at pos) = do
   pure (env2, TypeDef pos tname t)
 typeCheckDef (L.FunctionDef reT fname args as pos) = do
   env     <- ask
-  reT'    <- typeCheckTypes reT 
-  funType <- generateFunType reT' args 
-  funArgs <- traverse typeCheckFunArg args 
+  !reT'    <- typeCheckTypes reT 
+  !funType <- generateFunType reT' args 
+  !funArgs <- traverse typeCheckFunArg args 
   SomeSing @_ @sFunType sFunType <- pure $ toSing funType 
   SomeSing @_ @sRet sRet <- pure $ toSing reT'
+
+
   withSingI sFunType 
     $ withSingI sRet 
     $ do 
@@ -208,6 +229,17 @@ type instance FunArgX TCCtx a = AlexPosn
 type instance TypeDefX TCCtx = AlexPosn 
 type instance FunDefX TCCtx a = AlexPosn
 type instance ABotX TCCtx = AlexPosn 
+
+
+typeCheckDefs :: forall m. 
+  ( MonadReader TypeCheckEnv m 
+  , MonadWriter ErrLogs m
+  , MonadIO m 
+  ) 
+  => [L.Definition AlexPosn] -> m [(TypeCheckEnv,Definition TCCtx)]
+typeCheckDefs xs = ask >>= \env -> fmap snd $ (\b ta f -> foldlM f b ta) (env,[]) xs $ \(e,acc) def -> do 
+  (newEnv, d) <- local (const e) $ typeCheckDef def
+  pure (newEnv, (newEnv,d) : acc)
 
 typeCheckAction ::  forall m. 
   ( MonadReader TypeCheckEnv m 
@@ -250,7 +282,7 @@ typeCheckAction (L.Declare lt var (Just le)) = do
           <> ", but instead got an expression of type"
           <> T.show (demote @et)
           <> "."
-        pure (env', MkAEF $ ABottom @'[] @PAUnit pos)
+        pure (env', MkAEF $  Declare pos (LVId @st pos var) $ EError @st pos)
 typeCheckAction (L.Assign lv e) = do 
   let pos = L.getLValueInfo lv
   MkLValuableE @lv' lv' <- typeCheckLValue lv
@@ -363,7 +395,18 @@ typeCheckActions pos [] = ask >>= \env -> case tceExpectedType env of
       <> " But instead got an empty sequence of actions."
     pure (env, MkAEF $ ABottom @'[] @et pos) 
   Nothing -> pure (env, MkAEF $ Skip @PAUnit ()) 
-typeCheckActions pos (la:las) = undefined 
+typeCheckActions pos (la:las) = do
+  let lapos = L.getActionInfo la 
+  (newEnv', MkAEF @actxla'  la') <-  typeCheckAction la 
+  (\ b ta f -> foldlM f b ta) (newEnv',MkAEF @actxla' $ AS lapos (MkAECtx @actxla'  la') []) las 
+    $ \(env',MkAEF @actx (AS  _ (MkAECtx x) xs)) a -> do
+      let lapos' = L.getActionInfo a 
+      (currEnv,MkAEF @actx' @curr curr) <- local (const env') $ typeCheckAction a
+      SomeSing @_ @factx factx <- pure . toSing $ defineActionCtx (demote @actx) (demote @actx')
+      withSingI factx 
+       $ pure (currEnv, MkAEF $ AS @factx lapos' (MkAECtx curr) $ MkAEF x : xs)
+  
+
 
 data PatternE where 
   MkPatternE :: SingI a => Pattern TCCtx a -> PatternE
@@ -690,7 +733,54 @@ typeCheckExpression (L.Times l r pos)
     ETimesF 
     ETimesZF
     ETimesFZ
-
+typeCheckExpression (L.ELValuable (L.PLId var pos)) = do 
+  env <- ask 
+  mv <- yield' var $ tceDict env 
+  case tceExpectedType env of 
+    Just t -> do 
+      SomeSing @_ @et et <- pure $ toSing t 
+      withSingI et $ case mv of 
+        Left e -> do 
+          appendToLog 
+            $  "Scoping error at " <> T.show pos <> ": "
+            <> showGammaErrors e
+          pure . MkEE $ EError @et pos
+        Right (MkAny' sv) -> case decideEquality et sv of 
+          Just Refl -> pure . MkEE $ EVar @et pos var 
+          Nothing -> do 
+            appendToLog 
+              $ "Type error at " <> T.show pos <> ". The expected type for the variable "
+              <> var 
+              <> " is: "
+              <> T.show t 
+              <> ", but instead got: "
+              <> T.show (fromSing sv)
+            pure . MkEE $ EError @et pos
+    Nothing ->  case mv of 
+      Left e -> do 
+        appendToLog 
+          $  "Scoping error at " <> T.show pos <> ": "
+          <> showGammaErrors e
+        pure . MkEE $ EError @PBottom pos
+      Right (MkAny' @sv _) -> pure . MkEE $ EVar @sv pos var
+typeCheckExpression (L.FApp var [] pos) = undefined
+typeCheckExpression (L.FApp var xs pos) = do 
+  env <- ask 
+  MkEE @f f <-  withExpectedType Nothing  
+    $ typeCheckExpression (L.ELValuable (L.PLId var pos))
+  case sing @f of 
+    STCon (matches @"->" -> Just Refl) (SCons @_ @sa sa (SCons @_ @sb sb SNil))
+      ->  withSingI sa $ withSingI sb $ typeCheckFAppS f xs 
+    _ -> do 
+      appendToLog 
+        $ "Type error in function application, at: "
+        <> T.show pos 
+        <> ", Variable "
+        <> var 
+        <> " is not a function."
+      case tceExpectedType env of 
+        Just (toSing -> SomeSing @_ @et et) -> withSingI et $ pure . MkEE $ EError @et pos 
+        Nothing ->  pure . MkEE $ EError @PBottom pos 
 
 
 
@@ -698,6 +788,8 @@ typeCheckExpression (L.Times l r pos)
 typeCheckExpression _ = undefined
 
 
+type instance EAppX TCCtx a b = AlexPosn 
+type instance EVarX TCCtx a = AlexPosn
 type instance EPlusZX TCCtx = AlexPosn 
 type instance EPlusFX TCCtx = AlexPosn 
 type instance EBotX   TCCtx = AlexPosn 
@@ -714,6 +806,42 @@ type instance ETimesFX TCCtx = AlexPosn
 type instance ETimesZFX TCCtx = AlexPosn 
 type instance ETimesFZX TCCtx = AlexPosn 
 
+typeCheckFAppS :: forall a b m. 
+  ( MonadReader TypeCheckEnv m 
+  , MonadWriter ErrLogs m
+  , MonadIO m 
+  , SingI a 
+  , SingI b
+  ) 
+  => E TCCtx (a :~> b)
+  -> [L.Expression AlexPosn]
+  -> m EE 
+typeCheckFAppS f xs = (\b ta op -> foldlM op b ta) (MkEE f) xs $ \(MkEE @uf uf) arg -> do 
+  let pos = L.getExpressionInfo arg 
+  case sing @uf of 
+    STCon (matches @"->" -> Just Refl) (SCons @_ @sa sa (SCons @_ @sb sb SNil))
+      -> withSingI sa $ withSingI sb $ do 
+        MkEE @targ targ <- withExpectedType (Just $ fromSing sa) $ typeCheckExpression arg
+        case decideEquality' @targ @sa of 
+          Just Refl -> pure . MkEE $ EApp pos uf targ
+          Nothing -> do 
+            appendToLog 
+              $ "Type error in function application, at: "
+              <> T.show pos 
+              <> ". Expected type: "
+              <> T.show (demote @sa)
+              <> ", but instead got: "
+              <> T.show (demote @targ)
+            pure . MkEE $ EError @sb pos 
+    _ -> do  
+      appendToLog 
+        $ "Type error in function application, at: "
+        <> T.show pos 
+        <> ". Not enough arguments to apply the function."
+      pure . MkEE $ EError @uf pos 
+
+
+ 
 
 
 typeCheckBinOp :: forall x0 x1 x2 x3 m. 
@@ -784,9 +912,11 @@ withDeclared :: forall (x :: PTypes)  m a.
   ) => Text -> m a -> m a -> m a
 withDeclared v iError ma =do 
   eEnv <- tceDict <$> ask 
-  nEnv <- declare @x v eEnv 
+  -- nEnv0 <- f <$> declare @x v eEnv 
+  nEnv <-  TypedMap.insert v (sing @x) eEnv
   case nEnv of 
     Left e -> appendToLog (showGammaErrors e) >> iError 
     Right nEnv' -> local (\env' -> env'{tceDict=nEnv'}) ma 
-
+  where   
+    f (Right a ) = a 
 

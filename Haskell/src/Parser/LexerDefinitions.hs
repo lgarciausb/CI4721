@@ -199,6 +199,7 @@ data Expression a
   | EBool Text a
   | Match (Expression a) [(Pattern a,[Action a])] a
   | FApp Text [Expression a] a
+  | Unit a 
   deriving (Eq,Show)
 
 getExpressionInfo :: Expression a -> a
@@ -228,7 +229,7 @@ getExpressionInfo (EChar _ a) = a
 getExpressionInfo (EBool _ a) = a
 getExpressionInfo (Match _ _ a) = a
 getExpressionInfo (FApp _ _ a) = a
-
+getExpressionInfo (Unit a) = a
 
 
 

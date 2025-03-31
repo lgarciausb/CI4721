@@ -145,10 +145,14 @@ insert :: forall {k} (a :: k) (f :: k -> Type) m.
   , SingKind k
   ) => Symbol -> f a -> TypeRepMap k f -> m (Either GammaErrors (TypeRepMap k f))
 insert var e (TypeRepMap d) = case M.lookup var d of 
-  Nothing -> declareFresh @a var (TypeRepMap d) >>= insert var e
+  Nothing -> do 
+    mv <- liftIO $ newMVar e
+    pure . pure . TypeRepMap $ M.insert var (MkAny mv) d
   Just (MkAny  @a' mv) -> case decideEquality (sing @a') (sing @a) of
     Nothing -> pure . Left $ TypeMismatch var (ExpectedType . T.show $ demote @a') (ActualType . T.show $ demote @a )
-    Just Refl -> const (Right . TypeRepMap $ d) <$> liftIO (modifyMVar_ mv $ pure . (const e) ) 
+    Just Refl -> do 
+      liftIO (modifyMVar_ mv $ pure . (const e) ) 
+      pure (Right . TypeRepMap $ d) 
 
 insertFresh  :: forall {k} (a :: k) (f :: k -> Type) m.  
   ( SingI a
