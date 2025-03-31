@@ -2,7 +2,7 @@
 
 ## Language Summary 
 
-- Structural Statically Typed 
+- Nominal Statically Typed 
 - Atoms for nominal typing.
 - Vector oriented, operations are lifted to vectors.
 - Strict evaluation from left to right.
@@ -117,6 +117,10 @@ The language provides structural static typing with the following syntax:
 - For records: `{foo : T, bar : T}`
 - For tagged unions: `T | T`
 
+### Custom Types
+
+Custom types must be defined outside functions. Ergo, must be defined in a global context.
+
 
 
 ## Actions
@@ -140,7 +144,7 @@ Assignments can be done for every syntactic construct that posses and l-value. A
 have the following syntax:
 
 ```c
-T lvaluable = e;
+T lvaluable := e;
 ```
 
 
@@ -162,11 +166,11 @@ Pattern matching can also bind new names. Which will always be treated as pass b
 explicitely stated otherwise:
 
 ```c
-type wrapped = {w : vector<int>}
+type wrapped := {w : vector<int>}
 :
 :
 :
-wrapped ws = new wrapped([1,2,3]);
+wrapped ws := new wrapped([1,2,3]);
 match ws with 
   {w : vector<int>} => {append(w,1);}
 /* ws.w will still be [1,2,3] */
@@ -191,12 +195,12 @@ while(bool){...};
 A concrete example:
 
 ```c
-vector<string> xs = ["1","2","3"];
+vector<string> xs := ["1","2","3"];
 for(x : xs){
   print(x);
 }
 while(true){
-  print("forever")
+  print("forever");
 }
 ```
 
@@ -206,7 +210,7 @@ It also provides `break`s and `continue`s inside any iteration mechanism:
 
 ```c
 for(x : xs){
-  match x with:
+  match x with
     0 => {break;}
     1 => {continue;}
     _ => {...}
@@ -222,7 +226,7 @@ constructors:
 
 ```c
 new T(args)
-type wrapped = {w : vector<int>}
+type wrapped := {w : vector<int>}
 new  wrapped([1,2,3]);
 ```
 
