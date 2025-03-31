@@ -139,6 +139,7 @@ type PZAtom  a  = PTCon "Atom"   '[a]
 type a :~> b    = PTCon "->"     '[a, b]
 type a :~|: b   = PTCon "|"      '[a,b]
 type PZArray a  = PTCon "Array" '[a]
+type PVector a  = PTCon "Vector" '[a]
 type PZRef a    = PTCon "Ref"   '[a]
 type PRecord as = PTCon "Record" as
 type a :~~.: b  = PTCon "~." [PTString a,b]

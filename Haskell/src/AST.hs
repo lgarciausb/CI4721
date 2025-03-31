@@ -234,6 +234,12 @@ data  E  (ctx :: Type) (a :: PTypes) where
     => EABlockX ctx a -> A ctx actx a -> E ctx a 
   EBottom :: EBotX ctx -> E ctx PBottom 
   EError  :: forall a ctx. EErrorX ctx a -> E ctx a
+  EArray :: EArrayX ctx -> [E ctx a] -> E ctx (PZArray a)
+  EVector :: EVectorX ctx -> [E ctx a] -> E ctx (PVector a)
+  EPlusZV  :: EPlusZVX ctx -> E ctx PZ -> E ctx (PVector a) -> E ctx (PVector a)
+  EPlusVZ  :: EPlusVZX ctx -> E ctx (PVector a) -> E ctx PZ -> E ctx (PVector a)
+  EPlusFV  :: EPlusFVX ctx -> E ctx PF -> E ctx (PVector a) -> E ctx (PVector a)
+  EPlusVF  :: EPlusVFX ctx -> E ctx (PVector a) -> E ctx PF -> E ctx (PVector a)
 
 type family EPlusZX   (ctx :: Type) :: Type 
 type family EPlusFX   (ctx :: Type) :: Type 
@@ -274,6 +280,12 @@ type family EPlusFZX  (ctx :: Type) :: Type
 type family EZBoolX   (ctx :: Type) :: Type
 type family ETimesZFX  (ctx :: Type) :: Type 
 type family ETimesFZX  (ctx :: Type) :: Type 
+type family EArrayX  (ctx :: Type) :: Type 
+type family EVectorX  (ctx :: Type) :: Type 
+type family EPlusZVX  (ctx :: Type) :: Type 
+type family EPlusVZX  (ctx :: Type) :: Type 
+type family EPlusFVX  (ctx :: Type) :: Type 
+type family EPlusVZX  (ctx :: Type) :: Type 
 
 
 
